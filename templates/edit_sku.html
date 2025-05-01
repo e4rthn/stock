@@ -56,6 +56,11 @@
                 <input type="number" id="shelf_life" name="shelf_life" min="1" required
                        value="{{ request.form['shelf_life'] or sku_data.shelf_life }}">
             </div>
+            <div class="form-group">
+              <label for="category">ประเภท:</label>
+              <input type="text" id="category" name="category" required placeholder="เช่น หมู, ไก่, ผัก, ผลไม้"
+                     value="{{ request.form['category'] or sku_data.category }}"> {# ดึงค่าเดิมมาแสดง #}
+            </div>
             <div>
                 <button type="submit">บันทึกการแก้ไข</button>
             </div>

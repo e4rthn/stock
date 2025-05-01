@@ -9,6 +9,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 SKU_FILE = 'skus.json' # ชื่อไฟล์ที่จะใช้เก็บข้อมูล SKU
 INVENTORY_FILE = 'inventory.json' # ชื่อไฟล์สำหรับเก็บข้อมูลสต็อก
+ALLOWED_CATEGORIES = ["หมู", "ไก่"," วัว", "เป็ด", "ทะเล", "ผัก", "ผลไม้", "อื่นๆ"]
 
 # --- นิยามฟังก์ชัน load/save ก่อน ---
 def load_skus():
@@ -281,16 +282,28 @@ def add_sku_route():
         sku_code = request.form.get('sku_code', '').strip().upper() # รับค่า, ตัดช่องว่าง, แปลงเป็นตัวใหญ่
         sku_name = request.form.get('sku_name', '').strip()
         shelf_life_str = request.form.get('shelf_life', '').strip()
+        category = request.form.get('category', '').strip()
 
         # --- การตรวจสอบข้อมูล (Validation) ---
-        if not sku_code or not sku_name or not shelf_life_str:
+        if not sku_code or not sku_name or not shelf_life_str or not category: # <-- เพิ่ม or not category
+            # ถ้าข้อมูลไม่ครบ ให้แสดงข้อความแจ้งเตือน
             flash("กรุณากรอกข้อมูลให้ครบทุกช่อง", "error")
             return render_template('add_sku.html') # กลับไปหน้าฟอร์ม
-
+        
+        if not sku_code or not sku_name or not shelf_life_str or not category: # <-- เพิ่ม or not category
+            flash("กรุณากรอกข้อมูลให้ครบทุกช่อง (รวมถึงประเภท)", "error")
+            # ส่ง category กลับไปด้วย ถ้า validation อื่นผ่านไปแล้ว
+            return render_template('add_sku.html', sku_code=sku_code, sku_name=sku_name, shelf_life=shelf_life_str, category=category)
+        
+        if category not in ALLOWED_CATEGORIES:
+            flash(f"ประเภท '{category}' ไม่ถูกต้อง กรุณาเลือกจากรายการ", "error")
+            # ส่งข้อมูลเดิมกลับไป พร้อมรายการ category
+            return render_template('add_sku.html', form_data=form_data, allowed_categories=ALLOWED_CATEGORIES)
+        
         if sku_code in skus_info:
             flash(f"รหัส SKU '{sku_code}' นี้มีอยู่แล้วในระบบ", "error")
             # ส่งข้อมูลที่กรอกกลับไปแสดงในฟอร์ม
-            return render_template('add_sku.html', sku_code=sku_code, sku_name=sku_name, shelf_life=shelf_life_str)
+            return render_template('add_sku.html', sku_code=sku_code, sku_name=sku_name, shelf_life=shelf_life_str, allowed_categories=ALLOWED_CATEGORIES)
 
         try:
             shelf_life = int(shelf_life_str)
@@ -298,20 +311,18 @@ def add_sku_route():
                 raise ValueError("Shelf life must be positive")
         except ValueError:
             flash("อายุสินค้า (Shelf Life) ต้องเป็นตัวเลขจำนวนเต็มบวกเท่านั้น", "error")
-            return render_template('add_sku.html', sku_code=sku_code, sku_name=sku_name, shelf_life=shelf_life_str)
+            return render_template('add_sku.html', sku_code=sku_code, sku_name=sku_name, shelf_life=shelf_life_str, allowed_categories=ALLOWED_CATEGORIES)
         # --- สิ้นสุดการตรวจสอบ ---
-
         # ถ้าข้อมูลถูกต้อง
-        skus_info[sku_code] = {"name": sku_name, "shelf_life": shelf_life} # เพิ่ม/อัปเดตใน Dict
+        skus_info[sku_code] = {"name": sku_name, "shelf_life": shelf_life, "category": category}
         if save_skus(skus_info): # บันทึกลงไฟล์
              flash(f"เพิ่ม SKU '{sku_code}' ({sku_name}) สำเร็จ!", "success")
         # else: save_skus จะ flash error เอง
-
-        return redirect(url_for('manage_skus')) # กลับไปหน้ารายการ SKU
-
-    else: # ถ้าเป็น GET request
-        return render_template('add_sku.html')
-
+    else:
+        return render_template('add_sku.html', allowed_categories=ALLOWED_CATEGORIES, form_data={})
+    # ถ้าเป็น GET request หรือบันทึกสำเร็จแล้ว
+    return redirect(url_for('manage_skus')) # กลับไปหน้ารายการ SKU
+    
 @app.route('/skus/edit/<sku_code>', methods=['GET', 'POST'])
 def edit_sku_route(sku_code):
     """จัดการหน้าแก้ไข SKU"""
@@ -324,25 +335,38 @@ def edit_sku_route(sku_code):
         # รับข้อมูลใหม่จากฟอร์ม
         sku_name = request.form.get('sku_name', '').strip()
         shelf_life_str = request.form.get('shelf_life', '').strip()
+        new_category = request.form.get('category', '').strip()
 
         # --- การตรวจสอบข้อมูล (Validation) ---
-        if not sku_name or not shelf_life_str:
+        if not sku_name or not shelf_life_str or not new_category: # <-- เพิ่ม or not new_category
+            # ถ้าข้อมูลไม่ครบ ให้แสดงข้อความแจ้งเตือน
             flash("กรุณากรอกข้อมูลให้ครบทุกช่อง", "error")
             # ส่งข้อมูล *ปัจจุบัน* กลับไปแสดงในฟอร์มแก้ไข
-            return render_template('edit_sku.html', sku_code=sku_code, sku_data=skus_info[sku_code])
-
+            return render_template('edit_sku.html', sku_code=sku_code, sku_data=skus_info[sku_code], allowed_categories=ALLOWED_CATEGORIES)
+            
+        if new_category not in ALLOWED_CATEGORIES:
+            flash(f"ประเภท '{new_category}' ไม่ถูกต้อง กรุณาเลือกจากรายการ", "error")
+            # ส่งข้อมูลปัจจุบันกลับไป พร้อมรายการ category
+            return render_template('edit_sku.html', sku_code=sku_code, sku_data=skus_info[sku_code],
+                                   allowed_categories=ALLOWED_CATEGORIES)
         try:
             shelf_life = int(shelf_life_str)
             if shelf_life <= 0:
                 raise ValueError("Shelf life must be positive")
         except ValueError:
             flash("อายุสินค้า (Shelf Life) ต้องเป็นตัวเลขจำนวนเต็มบวกเท่านั้น", "error")
+            return render_template('edit_sku.html', sku_code=sku_code, sku_data=skus_info[sku_code], allowed_categories=ALLOWED_CATEGORIES)
+        
+        if not sku_name or not shelf_life_str or not new_category: # <-- เพิ่ม or not new_category
+            flash("กรุณากรอกข้อมูลให้ครบทุกช่อง (รวมถึงประเภท)", "error")
+            # ส่งข้อมูล *ปัจจุบัน* กลับไปแสดงในฟอร์มแก้ไข
             return render_template('edit_sku.html', sku_code=sku_code, sku_data=skus_info[sku_code])
         # --- สิ้นสุดการตรวจสอบ ---
 
         # ถ้าข้อมูลถูกต้อง
         skus_info[sku_code]['name'] = sku_name      # อัปเดตชื่อ
-        skus_info[sku_code]['shelf_life'] = shelf_life # อัปเดตอายุ
+        skus_info[sku_code]['shelf_life'] = shelf_life # อัปเดต Shelf Life
+        skus_info[sku_code]['category'] = new_category # อัปเดตประเภท
         if save_skus(skus_info): # บันทึกลงไฟล์
             flash(f"แก้ไข SKU '{sku_code}' สำเร็จ!", "success")
 

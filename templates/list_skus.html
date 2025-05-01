@@ -55,6 +55,7 @@
                         <th>รหัส SKU</th>
                         <th>ชื่อสินค้า</th>
                         <th>อายุสินค้า (วัน)</th>
+                        <th>ประเภท</th>
                         <th>จัดการ</th>
                     </tr>
                 </thead>
@@ -64,6 +65,8 @@
                         <td>{{ code }}</td>
                         <td>{{ data.name }}</td>
                         <td>{{ data.shelf_life }}</td>
+                        <td>{{ data.category or 'N/A' }}</td>
+                        <td class="table-actions"></td>
                         <td class="table-actions">
                             <a href="{{ url_for('edit_sku_route', sku_code=code) }}" class="edit">✏️ แก้ไข</a>
                             {# ใช้ form สำหรับการลบ เพื่อให้เป็น POST request #}

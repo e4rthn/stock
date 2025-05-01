@@ -9,7 +9,22 @@
         .form-container { background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto;}
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        input[type=text], input[type=number] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        /* แก้ไข Rule เดิม หรือ เพิ่ม Rule ใหม่ */
+        input[type=text], input[type=number], select {
+            width: 100%;
+            padding: 10px; /* ระยะห่างภายใน */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em; /* ขนาดตัวอักษร (1em คือขนาดปกติ) */
+            height: 42px;  /* <<< ลองกำหนดความสูงให้เท่าๆ กัน */
+            line-height: normal; /* ช่วยจัดตำแหน่งข้อความแนวตั้ง */
+            /* เพิ่ม vertical-align ถ้าข้อความไม่กลาง (บาง browser) */
+            /* vertical-align: middle; */
+        }
+
+ /* (ทางเลือก) ถ้าอยากให้ select สูงกว่า input อื่นๆ เล็กน้อย */
+ /* select { height: 45px; } */
         input[type=text]:focus, input[type=number]:focus { border-color: #007bff; outline: none; }
         button { padding: 12px 20px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease; }
         button:hover { background-color: #218838; }
@@ -42,18 +57,31 @@
                 <label for="sku_code">รหัส SKU:</label>
                 {# แปลงเป็นตัวใหญ่เมื่อกรอกเสร็จด้วย JS เล็กน้อย #}
                 <input type="text" id="sku_code" name="sku_code" required placeholder="เช่น FP003"
-                       value="{{ request.form['sku_code'] or '' }}"
+                       value="{{ form_data.get['sku_code'] or '' }}"
                        oninput="this.value = this.value.toUpperCase()">
             </div>
             <div class="form-group">
                 <label for="sku_name">ชื่อสินค้า:</label>
                 <input type="text" id="sku_name" name="sku_name" required placeholder="เช่น ส้มเขียวหวาน"
-                       value="{{ request.form['sku_name'] or '' }}">
+                       value="{{ form_data.get['sku_name'] or '' }}">
             </div>
             <div class="form-group">
                 <label for="shelf_life">อายุสินค้า (วัน):</label>
                 <input type="number" id="shelf_life" name="shelf_life" min="1" required placeholder="เช่น 10"
-                       value="{{ request.form['shelf_life'] or '' }}">
+                       value="{{ form_data.get['shelf_life'] or '' }}">
+            </div>
+            <div class="form-group">
+              <label for="category">ประเภท:</label>
+              <select id="category" name="category" required>
+                  {# เลือก default ถ้าไม่มีค่าใน form_data.category #}
+                  <option value="" disabled {% if not form_data.get('category') %}selected{% endif %}>-- เลือกประเภท --</option>
+                  {% for cat in allowed_categories %}
+                       {# เลือก option นี้ ถ้าค่า cat ตรงกับค่าใน form_data.category #}
+                      <option value="{{ cat }}" {% if form_data.get('category') == cat %}selected{% endif %}>
+                          {{ cat }}
+                      </option>
+                  {% endfor %}
+              </select>
             </div>
             <div>
                 <button type="submit">เพิ่ม SKU</button>

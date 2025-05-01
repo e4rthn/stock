@@ -1,6 +1,37 @@
 {
-    "051432822": {
-        "name": "ซีพี สันในไก่ SIS กก. ละ",
-        "shelf_life": 5
+    "FP001": {
+        "name": "กล้วยหอมทอง",
+        "shelf_life": 6,
+        "category": "ผลไม้"
+    },
+    "FP002": {
+        "name": "กุ้ง",
+        "shelf_life": 7,
+        "category": "ทะเล"
+    },
+    "VG001": {
+        "name": "ผักกาดขาว",
+        "shelf_life": 4,
+        "category": "ผัก"
+    },
+    "MK001": {
+        "name": "สันในหมู",
+        "shelf_life": 3,
+        "category": "หมู"
+    },
+    "CK001": {
+        "name": "เนื้ออกไก่",
+        "shelf_life": 3,
+        "category": "ไก่"
+    },
+    "DK002": {
+        "name": "เป็ด",
+        "shelf_life": 3,
+        "category": "เป็ด"
+    },
+    "MK002": {
+        "name": "เนื้อวัว",
+        "shelf_life": 3,
+        "category": "วัว"
     }
 }
