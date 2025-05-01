@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>แก้ไข SKU: {{ sku_code }}</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1 { color: #333; border-bottom: 2px solid #ffc107; padding-bottom: 10px; }
+        .form-container { background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto;}
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        input[type=text], input[type=number] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+         input[readonly] { background-color: #e9ecef; cursor: not-allowed; }
+        input[type=text]:focus, input[type=number]:focus { border-color: #007bff; outline: none; }
+        button { padding: 12px 20px; background-color: #ffc107; color: #333; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease; }
+        button:hover { background-color: #e0a800; }
+        .back-link { display: inline-block; margin-top: 20px; text-decoration: none; color: #007bff; }
+        .back-link:hover { text-decoration: underline; }
+        .messages { list-style: none; padding: 0; margin-bottom: 15px; }
+        .messages li { padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; border: 1px solid transparent; }
+        .messages .error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+     </style>
+</head>
+<body>
+     <div class="form-container">
+        <h1>✏️ แก้ไข SKU: {{ sku_code }}</h1>
+
+         {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class=messages>
+            {% for category, message in messages %}
+              {% if category == 'error' %}
+                <li class="{{ category }}">{{ message }}</li>
+              {% endif %}
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        {# action ชี้ไปที่ route edit_sku_route พร้อม sku_code #}
+        <form method="POST" action="{{ url_for('edit_sku_route', sku_code=sku_code) }}">
+            <div class="form-group">
+                <label>รหัส SKU:</label>
+                {# ทำให้แก้ไขรหัสไม่ได้ #}
+                <input type="text" value="{{ sku_code }}" readonly>
+            </div>
+            <div class="form-group">
+                <label for="sku_name">ชื่อสินค้า:</label>
+                {# ดึงค่าปัจจุบันมาแสดงใน value #}
+                <input type="text" id="sku_name" name="sku_name" required
+                       value="{{ request.form['sku_name'] or sku_data.name }}">
+            </div>
+            <div class="form-group">
+                <label for="shelf_life">อายุสินค้า (วัน):</label>
+                {# ดึงค่าปัจจุบันมาแสดงใน value #}
+                <input type="number" id="shelf_life" name="shelf_life" min="1" required
+                       value="{{ request.form['shelf_life'] or sku_data.shelf_life }}">
+            </div>
+            <div>
+                <button type="submit">บันทึกการแก้ไข</button>
+            </div>
+        </form>
+        <a href="{{ url_for('manage_skus') }}" class="back-link">ยกเลิก / กลับไปหน้ารายการ</a>
+    </div>
+</body>
+</html>

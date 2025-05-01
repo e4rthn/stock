@@ -1,0 +1,20 @@
+[
+    {
+        "batch_id": "051432822-2025-04-27-1",
+        "sku_code": "051432822",
+        "sku_name": "ซีพี สันในไก่ SIS กก. ละ",
+        "receive_date": "2025-04-27",
+        "expiry_date": "2025-05-02",
+        "initial_qty_kg": 15.0,
+        "current_qty_kg": 15.0
+    },
+    {
+        "batch_id": "051432822-2025-04-28-2",
+        "sku_code": "051432822",
+        "sku_name": "ซีพี สันในไก่ SIS กก. ละ",
+        "receive_date": "2025-04-28",
+        "expiry_date": "2025-05-03",
+        "initial_qty_kg": 10.0,
+        "current_qty_kg": 10.0
+    }
+]

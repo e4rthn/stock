@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการสต็อกสินค้าสด</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        h1, h2, h3 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .alert-section { border: 2px solid red; padding: 15px; margin-bottom: 20px; background-color: #fff5f5; }
+        .alert-item { margin-bottom: 10px; }
+        .action-links a { margin-right: 15px; text-decoration: none; background-color: #007bff; color: white; padding: 10px 15px; border-radius: 4px; }
+        .action-links a:hover { background-color: #0056b3; }
+        .messages { list-style: none; padding: 0; margin-bottom: 15px; }
+        .messages li { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .messages .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .expired { color: red; font-weight: bold; }
+        .soon { color: orange; }
+        .action-links a.manage {
+    background-color: #6c757d; /* สีเทา */
+}
+.action-links a.manage:hover {
+    background-color: #5a6268; /* สีเทาเข้มขึ้นเมื่อเมาส์ชี้ */
+}
+.instock-alert {
+    border-color: #17a2b8; /* สีฟ้า */
+    background-color: #e7f7f9;
+    border-left: 5px solid #17a2b8;
+}
+.instock-alert h2 {
+    color: #0f6674;
+    border-bottom-color: #b8e6ed;
+}
+        .sell { background-color: #28a745; }
+        .sell:hover { background-color: #218838; }
+        .add { background-color: #007bff; }
+        .add:hover { background-color: #0056b3; }
+        .list { background-color: #17a2b8; }
+        .list:hover { background-color: #138496; }
+        .manage { background-color: #6c757d; }
+        button.delete-stock {
+    background-color: #dc3545; /* สีแดง */
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+button.delete-stock:hover {
+    background-color: #c82333; /* สีแดงเข้มขึ้น */
+}
+        .delete-stock { background-color: #dc3545; }
+        .delete-stock:hover { background-color: #c82333; }
+        .alert-section h2 { color: red; }
+        .alert-item strong { font-weight: bold; }
+        .alert-item ul { list-style-type: none; padding-left: 0; }
+        .alert-item li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>ระบบจัดการสต็อกสินค้าสด</h1>
+    <p>วันที่ปัจจุบัน: {{ today_date.strftime('%Y-%m-%d') }}</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class=messages>
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <div class="action-links">
+        <a href="{{ url_for('add_stock_route') }}">➕ เพิ่มสต็อกสินค้า</a>
+        <a href="{{ url_for('record_sale_route') }}" class="sell">💲 บันทึกการขาย</a>
+        <a href="{{ url_for('add_sku_route') }}" class="add">➕ เพิ่ม SKU ใหม่</a>
+        <a href="{{ url_for('manage_skus') }}" class="manage">⚙️ จัดการประเภทสินค้า (SKU)</a>
+    </div>
+
+    {# --- ส่วนแจ้งเตือนใกล้หมดอายุ (Expiry) --- #}
+    {# ตรวจสอบว่ามีข้อมูลใน alerts_data['expiry'] หรือไม่ #}
+    {% if alerts_data['expiry'] %}
+        {# ใช้ class เดิม หรือจะเปลี่ยนก็ได้ #}
+        <div class="alert-section expiry-alert">
+            <h2>🔔 แจ้งเตือนสินค้าใกล้หมดอายุ / หมดอายุแล้ว</h2>
+            {# วนลูปข้อมูล expiry alerts #}
+            {% for label, skus_data in alerts_data['expiry'].items() %}
+                 <h3>{{ label }}</h3>
+                 {% for sku, data in skus_data.items() %}
+                     <div class="alert-item">
+                         <strong>SKU: {{ sku }} ({{ data.name }})</strong>
+                         <ul>
+                             {% for batch in data.batches %}
+                                 {% set days_left = (batch.expiry_date - today_date).days %}
+                                 <li class="{{ 'expired' if days_left <= 0 else 'soon' }}">
+                                     ล็อต ID: {{ batch.batch_id }}, รับ: {{ batch.receive_date.strftime('%d-%m-%Y') }},
+                                     หมดอายุ: {{ batch.expiry_date.strftime('%d-%m-%Y') }}
+                                     ({{ 'หมดอายุแล้ว!' if days_left <= 0 else ('เหลือ ' + days_left|string + ' วัน') }}),
+                                     คงเหลือ: {{ '%.2f'|format(batch.current_qty_kg) }} กก.
+                                 </li>
+                             {% endfor %}
+                         </ul>
+                     </div>
+                 {% else %}
+                    <p style="padding-left: 10px;">- ไม่มีรายการแจ้งเตือนสำหรับ {{ label }} -</p>
+                 {% endfor %}
+            {% endfor %}
+        </div>
+    {% endif %} {# สิ้นสุด if alerts_data['expiry'] #}
+    
+    
+    {# --- ส่วนแจ้งเตือนอยู่ในสต็อกครบกำหนด (In-Stock Duration) --- #}
+    {# ตรวจสอบว่ามีข้อมูลใน alerts_data['in_stock'] หรือไม่ #}
+    {% if alerts_data['in_stock'] %}
+        {# ใช้ class ใหม่ หรือปรับ style เพื่อให้แตกต่าง #}
+        <div class="alert-section instock-alert">
+            <h2>⏱️ แจ้งเตือนสินค้าอยู่ในสต็อกครบกำหนด</h2>
+             {# วนลูปข้อมูล in-stock alerts #}
+            {% for label, skus_data in alerts_data['in_stock'].items() %}
+                 <h3>{{ label }}</h3> {# เช่น อยู่ในสต็อกครบ 3 วัน #}
+                 {% for sku, data in skus_data.items() %}
+                     <div class="alert-item">
+                         <strong>SKU: {{ sku }} ({{ data.name }})</strong>
+                         <ul>
+                             {# แสดงรายละเอียด batch ที่เข้าเงื่อนไข #}
+                             {% for batch in data.batches %}
+                                 <li>
+                                     ล็อต ID: {{ batch.batch_id }}, รับ: {{ batch.receive_date.strftime('%d-%m-%Y') }},
+                                     หมดอายุ: {{ batch.expiry_date.strftime('%d-%m-%Y') }},
+                                     คงเหลือ: {{ '%.2f'|format(batch.current_qty_kg) }} กก.
+                                 </li>
+                             {% endfor %}
+                         </ul>
+                     </div>
+                 {% else %}
+                     <p style="padding-left: 10px;">- ไม่มีรายการแจ้งเตือนสำหรับ {{ label }} -</p>
+                 {% endfor %}
+            {% endfor %}
+        </div>
+    {% endif %} {# สิ้นสุด if alerts_data['in_stock'] #}
+    
+    
+    {# แสดงข้อความ ถ้าไม่มีการแจ้งเตือนใดๆ เลย #}
+    {% if not alerts_data['expiry'] and not alerts_data['in_stock'] %}
+         <p style="color: green; font-weight: bold;">✅ ไม่มีรายการแจ้งเตือนใดๆ</p>
+    {% endif %}
+
+
+    <h2>📦 สต็อกสินค้าปัจจุบันทั้งหมด (เรียงตามวันหมดอายุ)</h2>
+    {% if inventory %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ล็อต ID</th>
+                    <th>SKU</th>
+                    <th>ชื่อสินค้า</th>
+                    <th>วันที่รับเข้า</th>
+                    <th>วันหมดอายุ</th>
+                    <th>ปริมาณเริ่มต้น (กก.)</th>
+                    <th>ปริมาณคงเหลือ (กก.)</th>
+                    <th>จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in inventory %}
+                <tr>
+                    <td>{{ batch.batch_id }}</td>
+                    <td>{{ batch.sku_code }}</td>
+                    <td>{{ batch.sku_name }}</td>
+                    <td>{{ batch.receive_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ batch.expiry_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ '%.2f'|format(batch.initial_qty_kg) }}</td>
+                    <td>{{ '%.2f'|format(batch.current_qty_kg) }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_stock_batch', batch_id=batch.batch_id) }}" method="POST" style="display: inline;" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบล็อต ID: {{ batch.batch_id }} ?');">
+                            <button type="submit" class="delete-stock">🗑️ ลบ</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>ยังไม่มีสินค้าในสต็อก</p>
+    {% endif %}
+
+</body>
+</html>
