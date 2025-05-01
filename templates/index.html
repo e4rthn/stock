@@ -61,6 +61,38 @@ button.delete-stock:hover {
         .alert-item strong { font-weight: bold; }
         .alert-item ul { list-style-type: none; padding-left: 0; }
         .alert-item li { margin-bottom: 5px; }
+        @media (max-width: 768px) {
+    .container {
+        max-width: 100%;      /* ใช้ความกว้างเต็มหน้าจอ */
+        padding-left: 10px;   /* ลด padding ซ้ายขวาเล็กน้อย */
+        padding-right: 10px;
+        margin: 0;            /* เอา margin ซ้ายขวา auto ออก */
+        }
+    .action-links a {
+        display: block;        /* เปลี่ยนเป็น block element */
+        margin-right: 0;       /* เอา margin ขวาออก */
+        margin-bottom: 10px;   /* เพิ่มช่องว่างด้านล่าง */
+        text-align: center;    /* จัดข้อความกลาง */
+table {
+    display: block;       /* ทำให้ table มีคุณสมบัติ block */
+    width: 100%;          /* พยายามให้กว้างเต็ม */
+    overflow-x: auto;     /* เพิ่ม scrollbar แนวนอน ถ้ากว้างเกิน */
+    white-space: nowrap;  /* ไม่ให้ข้อความในเซลล์ขึ้นบรรทัดใหม่ */
+    -webkit-overflow-scrolling: touch; /* ทำให้ scroll ลื่นขึ้นบน iOS */
+}
+/* ทำให้เซลล์ไม่ตัดคำ */
+th, td {
+    white-space: nowrap;
+}
+
+/* 4. ปรับขนาด Font เล็กน้อย */
+body {
+    font-size: 15px; /* อาจจะลดขนาดตัวอักษรพื้นฐาน */
+}
+h1 { font-size: 1.6em; }
+h2 { font-size: 1.4em; }
+h3 { font-size: 1.2em; }
+th, td { padding: 8px 10px; } /* ลด padding ในตารางเล็กน้อย */
     </style>
 </head>
 <body>
