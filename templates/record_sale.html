@@ -26,28 +26,69 @@
                  {# Use form_data for repopulation #}
                  {% set current_data = form_data if form_data else {} %}
 
-
-                 {% if skus %} {# skus here means available_skus_to_sell #}
+                 {% if skus %} {# skus = available_skus_to_sell #}
                  <form method="post" action="{{ url_for('record_sale') }}" novalidate>
+                    {# --- เลือก SKU --- #}
                     <div class="mb-3">
                         <label for="sku" class="form-label fw-bold">เลือก SKU (จากสินค้าพร้อมขาย):<span class="text-danger ms-1">*</span></label>
                         <select class="form-select {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" required>
                             <option value="" {% if not current_data.sku %}selected{% endif %} disabled>-- กรุณาเลือก SKU --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                                {# --- ใช้ sellable_stock_agg --- #}
                                 {% set available_qty = sellable_stock_agg.get(sku_code, 0) %}
-                               <option value="{{ sku_code }}" {% if current_data.sku == sku_code %}selected{% endif %}>
+                                {# ดึงราคาปัจจุบันจากข้อมูลที่ส่งมา #}
+                                {% set current_prices = sku_data.get('current_prices', {}) %}
+                               <option value="{{ sku_code }}" {% if current_data.sku == sku_code %}selected{% endif %}
+                                    data-price-b2c="{{ current_prices.get('price_b2c', '') }}"
+                                    data-price-b2b="{{ current_prices.get('price_b2b', '') }}">
                                    {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ available_qty }}
                                </option>
                             {% endfor %}
                         </select>
                     </div>
+
+                    {# --- จำนวน --- #}
                     <div class="mb-3">
                         <label for="quantity" class="form-label fw-bold">จำนวนที่ขาย:<span class="text-danger ms-1">*</span></label>
                         <input type="number" class="form-control {% if errors and 'quantity' in errors %}is-invalid{% endif %}" id="quantity" name="quantity" min="1"
                                value="{{ current_data.quantity or '' }}" required placeholder="ระบุจำนวน">
                         <div class="form-text">ระบบจะหักจาก Batch ที่ใกล้หมดอายุที่สุดก่อน (RTC2 > RTC1 > หน้าร้าน)</div>
                     </div>
+
+                    {# --- ประเภทราคา --- #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">ประเภทราคา:<span class="text-danger ms-1">*</span></label>
+                        <div id="price-display" class="small text-muted mb-1">เลือก SKU เพื่อดูราคามาตรฐาน</div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input price-type-radio {% if errors and 'price_type' in errors %}is-invalid{% endif %}" type="radio" name="price_type" id="price_type_b2c" value="b2c" {% if current_data.price_type == 'b2c' %}checked{% endif %} required>
+                            <label class="form-check-label" for="price_type_b2c">B2C</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input price-type-radio {% if errors and 'price_type' in errors %}is-invalid{% endif %}" type="radio" name="price_type" id="price_type_b2b" value="b2b" {% if current_data.price_type == 'b2b' %}checked{% endif %} required>
+                            <label class="form-check-label" for="price_type_b2b">B2B</label>
+                        </div>
+                         {% if errors and 'price_type' in errors %}
+                            <div class="invalid-feedback d-block">{{ errors.price_type }}</div>
+                         {% endif %}
+                    </div>
+
+                    {# --- ราคา B2B กำหนดเอง (เพิ่มช่องนี้) --- #}
+                    <div class="mb-3" id="custom-b2b-price-group" style="display: none;"> {# ซ่อนไว้ก่อน #}
+                        <label for="custom_b2b_price" class="form-label fw-bold">ราคา B2B กำหนดเอง (บาท):</label>
+                        <input type="number" class="form-control {% if errors and 'custom_b2b_price' in errors %}is-invalid{% endif %}" id="custom_b2b_price" name="custom_b2b_price"
+                               min="0" step="0.01" placeholder="เว้นว่างเพื่อใช้ราคา B2B มาตรฐาน"
+                               value="{{ current_data.custom_b2b_price if current_data.custom_b2b_price is not none else '' }}">
+                        <div class="form-text">กรอกเฉพาะเมื่อต้องการใช้ราคาพิเศษสำหรับลูกค้า B2B รายนี้</div>
+                    </div>
+
+                    {# --- ส่วนลด RTC --- #}
+                    <div class="mb-3">
+                        <label for="rtc_discount_percent" class="form-label fw-bold">ส่วนลด RTC (%):</label>
+                        <input type="number" class="form-control {% if errors and 'rtc_discount_percent' in errors %}is-invalid{% endif %}" id="rtc_discount_percent" name="rtc_discount_percent" min="0" max="100" step="any"
+                               value="{{ current_data.rtc_discount_percent or 0 }}" placeholder="0-100">
+                        <div class="form-text">ใส่เฉพาะกรณีขายสินค้าจากตำแหน่ง RTC และต้องการให้ส่วนลด (เช่น 10 สำหรับ 10%)</div>
+                    </div>
+
+
                      <hr class="my-4">
                      <div class="d-flex justify-content-end">
                          <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
@@ -74,14 +115,45 @@
 document.addEventListener('DOMContentLoaded', function() {
     const skuSelect = document.getElementById('sku');
     const quantityInput = document.getElementById('quantity');
-     {# --- ใช้ sellable_stock_agg --- #}
-    const stockAggData = {{ sellable_stock_agg | tojson }};
+    const sellableStockAggData = {{ sellable_stock_agg | tojson }};
+    const priceDisplay = document.getElementById('price-display');
+    const priceTypeRadios = document.querySelectorAll('input[name="price_type"]');
+    const customB2bGroup = document.getElementById('custom-b2b-price-group');
+    const customB2bInput = document.getElementById('custom_b2b_price');
 
-    if (skuSelect && quantityInput && stockAggData) {
+    function updatePriceDisplay() {
+        const selectedOption = skuSelect.options[skuSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) {
+            priceDisplay.textContent = 'เลือก SKU เพื่อดูราคามาตรฐาน';
+            return;
+        }
+        const priceB2C = selectedOption.getAttribute('data-price-b2c');
+        const priceB2B = selectedOption.getAttribute('data-price-b2b');
+        const b2cText = priceB2C && !isNaN(parseFloat(priceB2C)) ? parseFloat(priceB2C).toFixed(2) : 'ไม่มี';
+        const b2bText = priceB2B && !isNaN(parseFloat(priceB2B)) ? parseFloat(priceB2B).toFixed(2) : 'ไม่มี';
+        priceDisplay.textContent = `ราคามาตรฐาน: B2C = ${b2cText}, B2B = ${b2bText}`;
+    }
+
+    // Function to show/hide custom B2B price input
+    function toggleCustomB2B() {
+        const selectedPriceType = document.querySelector('input[name="price_type"]:checked');
+        if (selectedPriceType && selectedPriceType.value === 'b2b') {
+            customB2bGroup.style.display = ''; // Show
+            customB2bInput.disabled = false;
+        } else {
+            customB2bGroup.style.display = 'none'; // Hide
+            customB2bInput.disabled = true;
+            // customB2bInput.value = ''; // Optionally clear value when hidden
+        }
+    }
+
+    if (skuSelect && quantityInput && sellableStockAggData) {
         skuSelect.addEventListener('change', function() {
             const selectedSku = this.value;
-            if (selectedSku && stockAggData[selectedSku] !== undefined) {
-                const maxQty = stockAggData[selectedSku];
+            updatePriceDisplay(); // Update price display on SKU change
+
+            if (selectedSku && sellableStockAggData[selectedSku] !== undefined) {
+                const maxQty = sellableStockAggData[selectedSku];
                 quantityInput.max = maxQty;
                 quantityInput.placeholder = `สูงสุด ${maxQty}`;
                  if (quantityInput.value && parseInt(quantityInput.value) > maxQty) {
@@ -94,9 +166,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         // Trigger change on load if an SKU is pre-selected
-         if(skuSelect.value) { skuSelect.dispatchEvent(new Event('change')); }
-         else { quantityInput.placeholder = 'ระบุจำนวน'; }
+         if(skuSelect.value) {
+             skuSelect.dispatchEvent(new Event('change'));
+         } else {
+             quantityInput.placeholder = 'ระบุจำนวน';
+             updatePriceDisplay(); // Ensure price display is updated even if no SKU selected initially
+         }
+    } else {
+         if(priceDisplay) priceDisplay.textContent = 'ไม่สามารถโหลดข้อมูลราคาได้';
     }
+
+    // Add event listeners to radio buttons
+    priceTypeRadios.forEach(radio => {
+        radio.addEventListener('change', toggleCustomB2B);
+    });
+
+    // Initial check for custom B2B field visibility
+    toggleCustomB2B();
+
 });
 </script>
 {% endblock %}

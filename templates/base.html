@@ -67,12 +67,16 @@
            <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
           </li>
-           <li class="nav-item">
-            <a class="nav-link {% if request.endpoint == 'view_pricing' %}active{% endif %}" href="{{ url_for('view_pricing') }}">ราคาขาย</a> {# <-- Link ไปหน้า Pricing #}
-          </li>
           <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'view_sales_report' %}active{% endif %}" href="{{ url_for('view_sales_report') }}">รายงานยอดขาย</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'view_pricing' %}active{% endif %}" href="{{ url_for('view_pricing') }}">ราคาขาย</a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['list_skus', 'add_sku', 'edit_sku'] %}active{% endif %}" href="{{ url_for('list_skus') }}">จัดการ SKU</a>
-          </li>
+        </li>
+        <li class="nav-item dropdown">
           <li class="nav-item dropdown">
              <a class="nav-link dropdown-toggle {% if request.endpoint in ['add_stock', 'move_to_display', 'record_sale'] %}active{% endif %}" href="#" id="navbarDropdownInventory" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                จัดการสต็อก

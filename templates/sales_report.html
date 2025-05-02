@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}รายงานยอดขาย{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-bar-chart-line-fill me-2"></i>รายงานยอดขาย</h1>
+</div>
+
+{# --- Filter Form --- #}
+<form method="get" action="{{ url_for('view_sales_report') }}" class="mb-4 p-3 bg-light rounded border">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label for="period" class="form-label small fw-bold">ช่วงเวลา:</label>
+            <select name="period" id="period" class="form-select form-select-sm">
+                <option value="today" {% if selected_period == 'today' %}selected{% endif %}>วันนี้</option>
+                <option value="this_week" {% if selected_period == 'this_week' %}selected{% endif %}>สัปดาห์นี้</option>
+                <option value="this_month" {% if selected_period == 'this_month' %}selected{% endif %}>เดือนนี้</option>
+                <option value="all" {% if selected_period == 'all' %}selected{% endif %}>ทั้งหมด</option>
+                <option value="custom" {% if selected_period == 'custom' %}selected{% endif %}>กำหนดเอง</option>
+            </select>
+        </div>
+        {# --- Custom Date Range Inputs (Show only when 'custom' selected) --- #}
+        <div class="col-md-3 custom-date-range" {% if selected_period != 'custom' %}style="display: none;"{% endif %}>
+            <label for="start_date" class="form-label small fw-bold">วันที่เริ่มต้น:</label>
+            <input type="date" id="start_date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+        </div>
+         <div class="col-md-3 custom-date-range" {% if selected_period != 'custom' %}style="display: none;"{% endif %}>
+            <label for="end_date" class="form-label small fw-bold">วันที่สิ้นสุด:</label>
+            <input type="date" id="end_date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+        </div>
+        <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i> ดูรายงาน</button>
+        </div>
+    </div>
+</form>
+{# --- End Filter Form --- #}
+
+{# --- Report Summary --- #}
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        สรุปยอดขายช่วง: <strong>{{ report_range_str }}</strong>
+    </div>
+    <div class="card-body text-center">
+        <h5 class="card-title">ยอดขายรวม</h5>
+        <p class="card-text display-4 fw-bold text-success">{{ "{:,.2f}".format(total_sales) }}</p>
+        <p class="text-muted mb-0">บาท</p>
+    </div>
+</div>
+{# --- End Report Summary --- #}
+
+{# --- Detailed Sales Log Table --- #}
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <i class="bi bi-list-ul me-1"></i> รายการขายในช่วงเวลาที่เลือก
+        <span class="badge bg-secondary rounded-pill float-end">{{ filtered_sales | length }} รายการ</span>
+    </div>
+    <div class="card-body p-0">
+        {% if filtered_sales %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>วันที่/เวลา (BKK)</th>
+                            <th>SKU</th>
+                            <th>ชื่อสินค้า</th>
+                            <th class="text-center">จำนวน</th>
+                            <th class="text-center">ราคา</th>
+                            <th class="text-end">ราคาฐาน/หน่วย</th>
+                            <th class="text-center">ส่วนลด RTC (%)</th>
+                            <th class="text-end">ราคาขาย/หน่วย</th>
+                            <th class="text-end">ยอดรวม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in filtered_sales %}
+                        <tr>
+                            <td class="text-nowrap"><small>{{ format_iso_date(sale.timestamp, '%d/%m/%y %H:%M') }}</small></td>
+                            <td class="font-monospace">{{ sale.sku }}</td>
+                            <td>{{ sale.sku_name }}</td>
+                            <td class="text-center">{{ sale.quantity }}</td>
+                            <td class="text-center"><span class="badge text-bg-light border">{{ sale.price_type | upper }}</span></td>
+                            <td class="text-end"><small>{{ "{:,.2f}".format(sale.base_unit_price) if sale.base_unit_price is not none else '-' }}</small></td>
+                            <td class="text-center"><small>{{ "{:.1f}".format(sale.rtc_discount_percent) if sale.rtc_discount_percent else '-' }}</small></td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(sale.final_unit_price) if sale.final_unit_price is not none else '-'}}</td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(sale.total_sale_value) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+             <p class="text-center text-muted p-4 fst-italic">-- ไม่พบข้อมูลการขายในช่วงเวลานี้ --</p>
+        {% endif %}
+    </div>
+</div>
+{# --- End Detailed Sales Log Table --- #}
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const periodSelect = document.getElementById('period');
+    const customDateRangeDivs = document.querySelectorAll('.custom-date-range');
+
+    function toggleCustomDateRange() {
+        if (periodSelect.value === 'custom') {
+            customDateRangeDivs.forEach(div => div.style.display = '');
+        } else {
+            customDateRangeDivs.forEach(div => div.style.display = 'none');
+        }
+    }
+
+    if (periodSelect) {
+        periodSelect.addEventListener('change', toggleCustomDateRange);
+        // Initial check in case the page loads with 'custom' selected
+        toggleCustomDateRange();
+    }
+});
+</script>
+{% endblock %}

@@ -11,59 +11,116 @@
 </div>
 
 {% if skus %}
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">SKU Code</th>
-                        <th scope="col">ชื่อสินค้า</th>
-                        <th scope="col">ประเภท</th>
-                        <th scope="col" class="text-center">อายุ (วัน)</th>
-                        <th scope="col" class="text-center">จุดสั่งซื้อ</th>
-                        <th scope="col" class="text-end">ราคา B2C (ปัจจุบัน)</th> {# <-- ระบุว่าเป็นราคาปัจจุบัน #}
-                        <th scope="col" class="text-end">ราคา B2B (ปัจจุบัน)</th> {# <-- ระบุว่าเป็นราคาปัจจุบัน #}
-                        <th scope="col" class="text-center" style="width: 15%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {# skus is now display_data from app.py including current prices #}
-                    {% for sku_code, sku_item in skus.items() %}
-                    <tr>
-                        <td class="font-monospace">{{ sku_code }}</td>
-                        <td>{{ sku_item.name }}</td>
-                        <td>{{ sku_item.category | default('-') }}</td>
-                        <td class="text-center">{{ sku_item.shelf_life_days | default('-') }}</td>
-                        <td class="text-center">{{ sku_item.reorder_point if sku_item.reorder_point is not none else '-' }}</td>
-                        <td class="text-end">
-                            {# Use price fields directly from the passed 'skus' dictionary #}
-                            {{ "{:,.2f}".format(sku_item.price_b2c) if sku_item.price_b2c is not none else '-' }}
-                        </td>
-                        <td class="text-end">
-                             {{ "{:,.2f}".format(sku_item.price_b2b) if sku_item.price_b2b is not none else '-' }}
-                        </td>
-                        <td class="text-center text-nowrap">
-                            <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary me-1" title="แก้ไข">
-                                <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
-                            </a>
-                            <form method="post" action="{{ url_for('delete_sku', sku=sku_code) }}" class="d-inline delete-form">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
-                                    <i class="bi bi-trash"></i> <span class="d-none d-md-inline">Delete</span>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+    {# --- Mobile View (List Group: แสดงบน xs, sm) --- #}
+    <div class="d-block d-md-none mb-3"> {# แสดงเฉพาะบนจอเล็กกว่า md #}
+        <ul class="list-group shadow-sm">
+            {% for sku_code, sku_item in skus.items() %} {# skus จาก app.py มีข้อมูลราคาปัจจุบันแล้ว #}
+            <li class="list-group-item px-3 py-2">
+                {# --- ส่วนหัว: SKU, ชื่อ, ปุ่ม Actions --- #}
+                <div class="d-flex w-100 justify-content-between align-items-start mb-1">
+                    {# ส่วน SKU และ ชื่อ #}
+                    <div class="me-2 text-truncate"> {# me-2 เพิ่มช่องว่าง, text-truncate กันยาวเกิน #}
+                        <h6 class="mb-0 text-truncate">
+                            <span class="font-monospace me-2">{{ sku_code }}</span>{{ sku_item.name }}
+                        </h6>
+                        <small class="text-muted">ประเภท: {{ sku_item.category | default('-') }}</small>
+                    </div>
+                    {# ส่วนปุ่ม Actions (ใช้ Icon) #}
+                    <div class="text-nowrap flex-shrink-0"> {# ไม่ให้ปุ่มยืด/หด #}
+                         <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary py-0 px-1 me-1" title="แก้ไข">
+                             <i class="bi bi-pencil-square"></i>
+                         </a>
+                         <form method="post" action="{{ url_for('delete_sku', sku=sku_code) }}" class="d-inline delete-form">
+                             <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="ลบ">
+                                 <i class="bi bi-trash"></i>
+                             </button>
+                         </form>
+                    </div>
+                 </div>
+                 {# --- ส่วนข้อมูลรอง: ราคา, อายุ, จุดสั่งซื้อ --- #}
+                <div class="row gx-2"> {# ใช้ Grid แบ่งครึ่ง #}
+                    <div class="col-6">
+                         <small class="text-muted">B2C:</small>
+                         <span class="fw-bold">{{ "{:,.2f}".format(sku_item.price_b2c) if sku_item.price_b2c is not none else '-' }}</span>
+                    </div>
+                     <div class="col-6">
+                         <small class="text-muted">B2B:</small>
+                         <span class="fw-bold">{{ "{:,.2f}".format(sku_item.price_b2b) if sku_item.price_b2b is not none else '-' }}</span>
+                    </div>
+                </div>
+                 <div class="row gx-2 mt-1"> {# แถวใหม่สำหรับ อายุ และ จุดสั่งซื้อ #}
+                     <div class="col-6">
+                        <small class="text-muted" title="อายุสินค้า (วัน)">อายุ:</small>
+                        <span>{{ sku_item.shelf_life_days | default('-') }}</span>
+                     </div>
+                     <div class="col-6">
+                        <small class="text-muted" title="จุดสั่งซื้อ">สั่งซื้อ:</small>
+                        <span>{{ sku_item.reorder_point if sku_item.reorder_point is not none else '-' }}</span>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div> {# --- End Mobile View --- #}
+
+
+    {# --- Desktop View (Table: แสดงบน md ขึ้นไป) --- #}
+    <div class="d-none d-md-block"> {# ซ่อนบนจอเล็กกว่า md #}
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">SKU Code</th>
+                                <th scope="col">ชื่อสินค้า</th>
+                                <th scope="col">ประเภท</th>
+                                <th scope="col" class="text-center">อายุ (วัน)</th>
+                                <th scope="col" class="text-center">จุดสั่งซื้อ</th>
+                                <th scope="col" class="text-end">ราคา B2C</th> {# สั้นๆ พอ #}
+                                <th scope="col" class="text-end">ราคา B2B</th> {# สั้นๆ พอ #}
+                                <th scope="col" class="text-center" style="width: 15%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# skus จาก app.py มีข้อมูลราคาปัจจุบันแล้ว #}
+                            {% for sku_code, sku_item in skus.items() %}
+                            <tr>
+                                <td class="font-monospace">{{ sku_code }}</td>
+                                <td>{{ sku_item.name }}</td>
+                                <td>{{ sku_item.category | default('-') }}</td>
+                                <td class="text-center">{{ sku_item.shelf_life_days | default('-') }}</td>
+                                <td class="text-center">{{ sku_item.reorder_point if sku_item.reorder_point is not none else '-' }}</td>
+                                <td class="text-end">
+                                    {{ "{:,.2f}".format(sku_item.price_b2c) if sku_item.price_b2c is not none else '-' }}
+                                </td>
+                                <td class="text-end">
+                                     {{ "{:,.2f}".format(sku_item.price_b2b) if sku_item.price_b2b is not none else '-' }}
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary me-1" title="แก้ไข">
+                                        <i class="bi bi-pencil-square"></i> <span class="d-none d-lg-inline">Edit</span> {# ซ่อน Edit บน md ด้วยก็ได้ถ้าต้องการ #}
+                                    </a>
+                                    <form method="post" action="{{ url_for('delete_sku', sku=sku_code) }}" class="d-inline delete-form">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
+                                            <i class="bi bi-trash"></i> <span class="d-none d-lg-inline">Delete</span> {# ซ่อน Delete บน md ด้วยก็ได้ถ้าต้องการ #}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
+    </div> {# --- End Desktop View --- #}
+
 {% else %}
-<div class="alert alert-info text-center shadow-sm" role="alert">
-    ยังไม่มีข้อมูล SKU กรุณา <a href="{{ url_for('add_sku') }}" class="alert-link">เพิ่ม SKU ใหม่</a>
-</div>
+    <div class="alert alert-info text-center shadow-sm" role="alert">
+        ยังไม่มีข้อมูล SKU กรุณา <a href="{{ url_for('add_sku') }}" class="alert-link">เพิ่ม SKU ใหม่</a>
+    </div>
 {% endif %}
 
 {% endblock %}

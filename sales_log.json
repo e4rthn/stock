@@ -1,0 +1,14 @@
+[
+    {
+        "sale_id": "f097cc06-e7e1-4dd2-935b-761e7937d5fe",
+        "timestamp": "2025-05-02T18:32:34Z",
+        "sku": "E",
+        "quantity": 5,
+        "source_location": "display",
+        "price_type": "b2b",
+        "base_unit_price": 1.0,
+        "rtc_discount_percent": 0.0,
+        "final_unit_price": 1.0,
+        "total_sale_value": 5.0
+    }
+]
