@@ -2,16 +2,22 @@
     "057890111": {
         "name": "ไก่ย่างนมสด",
         "category": "ไก่",
-        "shelf_life_days": 5
+        "shelf_life_days": 5,
+        "price_b2c": null,
+        "price_b2b": null
     },
     "001": {
         "name": "ไก่",
         "category": "ไก่",
-        "shelf_life_days": 6
+        "shelf_life_days": 6,
+        "price_b2c": null,
+        "price_b2b": null
     },
     "002": {
         "name": "หมู",
         "category": "หมู",
-        "shelf_life_days": 6
+        "shelf_life_days": 6,
+        "price_b2c": null,
+        "price_b2b": null
     }
 }

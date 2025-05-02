@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard สรุปภาพรวม{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-speedometer2 me-2"></i>Dashboard สรุปภาพรวม</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-sm btn-outline-secondary shadow-sm"><i class="bi bi-arrow-repeat"></i> รีเฟรช</a>
+</div>
+
+{# ดึงข้อมูล #}
+{% set summary = dashboard_data.status_summary %}
+{% set expiring = dashboard_data.expiring_soon %}
+{% set bad_stock = dashboard_data.bad_stock %}
+{% set cat_summary = dashboard_data.category_summary %}
+{% set expiring_days = dashboard_data.expiring_threshold_days %}
+{% set low_stock = dashboard_data.low_stock %}
+{% set location_configs = location_configs %} {# Already passed from app.py #}
+
+{# --- ส่วนสรุปยอดรวมตามสถานะ --- #}
+<div class="row g-3 mb-4">
+    {% for loc_key in ['display', 'back_stock', 'rtc1', 'rtc2', 'bad'] %} {# Enforce order #}
+        {% set loc_config = location_configs.get(loc_key) %}
+        {% set loc_data = summary.get(loc_key, {'total_qty': 0, 'sku_count': 0}) %}
+        {% if loc_config %} {# Check if config exists #}
+            {% set card_border_class = loc_config.border_status_class | replace('status-', 'border-') if loc_config.border_status_class else 'border-light' %}
+            {% set text_color_class = 'text-white' if loc_key in ['bad', 'display', 'rtc2'] else 'text-dark' %} {# Adjust text color for contrast #}
+            {% set header_bg_class = loc_config.badge_class | replace('text-', '') if loc_config.badge_class else 'bg-light' %}
+            <div class="col-6 col-md-4 col-lg">
+                <div class="card text-center h-100 shadow-sm {{ card_border_class }} border-3 overflow-hidden">
+                     <div class="card-header {{ header_bg_class }} border-0 pt-3 pb-2 {{ text_color_class }}">
+                         <h6 class="card-title mb-1 fw-bold small">
+                            <i class="bi {{ loc_config.icon }} me-1"></i> {{ loc_config.title }}
+                         </h6>
+                     </div>
+                    <div class="card-body d-flex flex-column justify-content-center pt-2 pb-2">
+                        <p class="card-text display-5 fw-bolder mb-0 text-dark">{{ "{:,}".format(loc_data.total_qty) }}</p>
+                        <small class="text-muted">{{ loc_data.sku_count }} SKU</small>
+                     </div>
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+{# --- ส่วนแสดงสินค้าที่ต้องจัดการ (ใกล้หมดอายุ + เหลือน้อย) --- #}
+<div class="row g-4 mb-4">
+    {# --- สินค้าใกล้หมดอายุ --- #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-warning-subtle">
+                <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-hourglass-split me-2"></i>สินค้าใกล้หมดอายุ (น้อยกว่า {{ expiring_days }} วัน)</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if expiring %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr><th>SKU</th><th>ชื่อสินค้า</th><th class="text-center">ตำแหน่ง</th><th class="text-end">จำนวน</th><th>เวลาคงเหลือ</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in expiring | sort(attribute='expiry_date') %}
+                                    {% set sku_info = skus_data.get(batch.sku) %}
+                                    {% set loc_key = batch.location %}
+                                    {% set loc_config = location_configs.get(loc_key, {'title': loc_key, 'badge_class': 'text-bg-light'}) %}
+                                    <tr>
+                                        <td class="font-monospace">{{ batch.sku }}</td>
+                                        <td>{{ sku_info.name if sku_info else '???' }}</td>
+                                        <td class="text-center status-badge-cell">
+                                            <span class="badge {{ loc_config.badge_class }}">{{ loc_config.title }}</span>
+                                        </td>
+                                        <td class="text-end">{{ batch.quantity }}</td>
+                                        <td class="text-nowrap" title="หมดอายุ: {{ format_iso_date(batch.expiry_date, '%d/%m/%y %H:%M') }} BKK">
+                                            {{ format_time_remaining(batch.expiry_date) | safe }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="d-flex align-items-center justify-content-center h-100 p-4">
+                        <p class="text-center text-muted fst-italic mb-0"><i class="bi bi-check-circle me-2 text-success"></i>ไม่มีสินค้าใกล้หมดอายุ</p>
+                     </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+     {# --- สินค้าเหลือน้อย (Low Stock) --- #}
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-info-subtle">
+                <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-box-arrow-down me-2"></i>สินค้าเหลือน้อย (ต่ำกว่าจุดสั่งซื้อ)</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if low_stock %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr><th>SKU</th><th>ชื่อสินค้า</th><th class="text-end">คงเหลือ</th><th class="text-end">จุดสั่งซื้อ</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock %}
+                                    <tr>
+                                        <td class="font-monospace">{{ item.sku }}</td>
+                                        <td>{{ item.name }}</td>
+                                        <td class="text-end fw-bold text-danger">{{ "{:,}".format(item.current_qty) }}</td>
+                                        <td class="text-end text-muted">{{ "{:,}".format(item.reorder_point) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                     <div class="d-flex align-items-center justify-content-center h-100 p-4">
+                         <p class="text-center text-muted fst-italic mb-0"><i class="bi bi-check-circle me-2 text-success"></i>ไม่มีสินค้าที่ถึงจุดสั่งซื้อ</p>
+                     </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- ส่วนสินค้าหมดอายุ และ สรุปตามประเภท --- #}
+<div class="row g-4">
+     {# --- สินค้าหมดอายุ (BAD) --- #}
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-trash3-fill me-2"></i>สินค้าหมดอายุ (BAD)</h5>
+            </div>
+            <div class="card-body p-0">
+                 {% if bad_stock %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0 table-dark">
+                             <thead>
+                                <tr><th>SKU</th><th>ชื่อสินค้า</th><th class="text-end">จำนวนรวม</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for sku_code, total_qty in bad_stock.items() | sort %}
+                                     {% set sku_info = skus_data.get(sku_code) %}
+                                     <tr>
+                                         <td class="font-monospace">{{ sku_code }}</td>
+                                         <td>{{ sku_info.name if sku_info else '???' }}</td>
+                                         <td class="text-end">{{ "{:,}".format(total_qty) }}</td>
+                                     </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                 {% else %}
+                    <div class="d-flex align-items-center justify-content-center h-100 p-4">
+                        <p class="text-center text-white-50 fst-italic mb-0">ไม่มีสินค้าหมดอายุ</p>
+                    </div>
+                 {% endif %}
+            </div>
+        </div>
+    </div>
+
+     {# --- สรุปตามประเภทสินค้า --- #}
+    <div class="col-md-6">
+        {% if cat_summary %}
+        <div class="card shadow-sm h-100">
+             <div class="card-header bg-light">
+                 <h5 class="mb-0"><i class="bi bi-tags-fill me-2"></i>สรุปตามประเภทสินค้า</h5>
+            </div>
+             <div class="card-body p-3">
+                 <ul class="list-group list-group-flush">
+                    {% for cat_name, cat_data in cat_summary.items() | sort %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                            <span><i class="bi bi-tag me-2 text-muted"></i>{{ cat_name }}</span>
+                            <span class="badge bg-secondary rounded-pill ms-2" title="{{ cat_data.sku_count }} SKU">{{ "{:,}".format(cat_data.total_qty) }} ชิ้น</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+             </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}

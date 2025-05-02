@@ -1,115 +1,55 @@
 <!doctype html>
 <html lang="th">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <title>{% block title %}Fresh Inventory App{% endblock %}</title> {# เปลี่ยน Title ให้ดู Professional ขึ้น #}
+  <title>{% block title %}Fresh Inventory App{% endblock %}</title>
   <style>
-    /* --- Theme Colors --- */
     :root {
-      --lotus-green: #008243; /* สีเขียวหลัก */
-      --lotus-green-darker: #006a36;
-      --lotus-gray: #f8f9fa; /* สีพื้นหลังอ่อน */
-      --status-display-color: var(--bs-primary); /* สีน้ำเงินสำหรับ Display */
-      --status-back-stock-color: var(--bs-secondary); /* สีเทาสำหรับ Back Stock */
-      --status-rtc1-color: var(--bs-warning); /* สีเหลืองสำหรับ RTC1 */
-      --status-rtc2-color: var(--bs-danger); /* สีแดงสำหรับ RTC2 */
-      --status-bad-color: var(--bs-dark); /* สีดำ/เทาเข้มสำหรับ BAD */
-      --bs-primary-rgb: 0, 130, 67; /* Override Bootstrap primary color variable */
-      --bs-link-color-rgb: 0, 130, 67; /* สี Link หลัก */
-      --bs-link-hover-color-rgb: 0, 106, 54; /* สี Link ตอน Hover */
-
+      --lotus-green: #008243; --lotus-green-darker: #006a36; --lotus-gray: #f8f9fa;
+      --status-display-color: var(--bs-primary); --status-back-stock-color: var(--bs-secondary);
+      --status-rtc1-color: var(--bs-warning); --status-rtc2-color: var(--bs-danger);
+      --status-bad-color: var(--bs-dark);
+      --bs-primary-rgb: 0, 130, 67; --bs-primary: var(--lotus-green);
+      --bs-link-color-rgb: 0, 130, 67; --bs-link-hover-color-rgb: 0, 106, 54;
+      --bs-body-font-family: 'Tahoma', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --bs-body-bg: var(--lotus-gray);
     }
-
-    body {
-        padding-top: 5rem;
-        padding-bottom: 3rem;
-        background-color: var(--lotus-gray); /* ใช้สีพื้นหลังอ่อน */
-        font-family: sans-serif; /* อาจจะเลือก Font ที่ดูดีขึ้น */
-    }
-    .container {
-        max-width: 1140px; /* ขยายความกว้างเล็กน้อย */
-    }
-
-    /* --- Navbar Styling --- */
-    .navbar {
-        background-color: var(--lotus-green); /* ใช้สีเขียว */
-        box-shadow: 0 2px 4px rgba(0,0,0,.1);
-    }
-    .navbar-brand {
-        font-weight: 600; /* Bold ขึ้นเล็กน้อย */
-    }
-    .navbar-dark .navbar-nav .nav-link {
-        color: rgba(255,255,255,.85);
-    }
-     .navbar-dark .navbar-nav .nav-link:hover,
-     .navbar-dark .navbar-nav .nav-link:focus {
-        color: #ffffff;
-    }
-    .navbar-dark .navbar-nav .nav-link.active {
-        color: #ffffff;
-        font-weight: 600;
-    }
-    /* Style Dropdown Menu */
-    .dropdown-menu {
-        border-radius: 0.25rem;
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
-        border: none;
-    }
-    .dropdown-item:active {
-         background-color: var(--lotus-green);
-         color: #fff;
-    }
-
-     /* --- Button Styling --- */
-    .btn-primary {
-        --bs-btn-bg: var(--lotus-green);
-        --bs-btn-border-color: var(--lotus-green);
-        --bs-btn-hover-bg: var(--lotus-green-darker);
-        --bs-btn-hover-border-color: var(--lotus-green-darker);
-        --bs-btn-active-bg: var(--lotus-green-darker);
-        --bs-btn-active-border-color: var(--lotus-green-darker);
-         --bs-btn-focus-shadow-rgb: 0, 130, 67, .5; /* ปรับสี focus shadow */
-    }
-    /* อาจจะปรับปุ่มสีอื่นๆ ให้เข้า Theme ถ้าต้องการ */
-    .btn-outline-danger { /* ทำให้ปุ่มลบเด่นขึ้นเล็กน้อย */
-        --bs-btn-hover-bg: var(--bs-danger);
-        --bs-btn-hover-color: #fff;
-    }
-
-
-    /* --- Table Row Status Styling --- */
-    .table > tbody > tr.status-display { border-left: 5px solid var(--status-display-color); }
-    .table > tbody > tr.status-back-stock { border-left: 5px solid var(--status-back-stock-color); }
-    .table > tbody > tr.status-rtc1 { border-left: 5px solid var(--status-rtc1-color); }
-    .table > tbody > tr.status-rtc2 { border-left: 5px solid var(--status-rtc2-color); }
-    .table > tbody > tr.status-bad { border-left: 5px solid var(--status-bad-color); }
-
-    /* ทำให้ border มีช่องว่างเล็กน้อยจากขอบเซลล์ */
-    .table td, .table th {
-        vertical-align: middle; /* จัดกลางแนวตั้ง */
-    }
-    .table tbody tr td:first-child,
-    .table tbody tr th:first-child {
-         /* เพิ่ม padding ซ้ายเพื่อให้เห็น border ชัดขึ้น */
-         /* ไม่จำเป็น ถ้า border อยู่บน tr */
-    }
-
-    /* ปรับปรุง Badge ให้อ่านง่ายขึ้น */
-    .status-badge {
-        font-size: 0.8em;
-        padding: 0.3em 0.6em;
-        vertical-align: middle; /* จัดกลางกับ text */
-        border: 1px solid rgba(0,0,0,0.1);
-    }
-
-
+    body { padding-top: 4.5rem; padding-bottom: 3rem; background-color: var(--bs-body-bg); }
+    .container-fluid.container { max-width: 1200px; }
+    .navbar { background-color: var(--lotus-green); box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+    .navbar-brand { font-weight: 600; }
+    .navbar-dark .navbar-nav .nav-link { color: rgba(255,255,255,.85); transition: color 0.2s ease-in-out, border-bottom-color 0.2s ease-in-out; border-bottom: 2px solid transparent; padding-top: 0.5rem; padding-bottom: 0.5rem; margin-bottom: -2px; }
+    .navbar-dark .navbar-nav .nav-link:hover, .navbar-dark .navbar-nav .nav-link:focus { color: #ffffff; }
+    .navbar-dark .navbar-nav .nav-link.active { color: #ffffff; font-weight: 600; border-bottom-color: #ffffff !important; }
+    .dropdown-menu { border-radius: 0.25rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); border: none; font-size: 0.95rem; }
+    .dropdown-item:active { background-color: var(--lotus-green); color: #fff; }
+    .btn { transition: all 0.2s ease-in-out; }
+    .btn-primary { --bs-btn-bg: var(--lotus-green); --bs-btn-border-color: var(--lotus-green); --bs-btn-hover-bg: var(--lotus-green-darker); --bs-btn-hover-border-color: var(--lotus-green-darker); --bs-btn-active-bg: var(--lotus-green-darker); --bs-btn-active-border-color: var(--lotus-green-darker); --bs-btn-focus-shadow-rgb: 0, 130, 67, .5; }
+    .btn-outline-danger { --bs-btn-hover-bg: var(--bs-danger); --bs-btn-hover-color: #fff; }
+    .table > tbody > tr.status-display { --bs-border-opacity: 1; border-left: 6px solid var(--status-display-color) !important; }
+    .table > tbody > tr.status-back-stock { --bs-border-opacity: 1; border-left: 6px solid var(--status-back-stock-color) !important; }
+    .table > tbody > tr.status-rtc1 { --bs-border-opacity: 1; border-left: 6px solid var(--status-rtc1-color) !important; }
+    .table > tbody > tr.status-rtc2 { --bs-border-opacity: 1; border-left: 6px solid var(--status-rtc2-color) !important; }
+    .table > tbody > tr.status-bad { --bs-border-opacity: 1; border-left: 6px solid var(--status-bad-color) !important; }
+    .table td:first-child, .table th:first-child { padding-left: 0.9rem; }
+    .table td, .table th { vertical-align: middle; padding-top: 0.6rem; padding-bottom: 0.6rem;}
+    .table thead th { background-color: #e9ecef; font-weight: 600; border-bottom-width: 1px; }
+    .status-badge-cell .badge { font-size: 0.875rem; padding: 0.5em 0.8em; width: auto; min-width: 100px; text-align: center; display: inline-block; font-weight: 600; border: 1px solid rgba(0,0,0,0.05); vertical-align: middle; letter-spacing: 0.5px; }
+    .badge.text-bg-warning { color: #333 !important; }
+    .filter-controls { border-bottom: 1px solid #dee2e6; padding-bottom: 1rem !important; margin-bottom: 1.5rem !important; }
+    .card { border: none; }
+    .card-header { border-bottom: 1px solid rgba(0,0,0,.075); }
+    *:focus-visible { outline: 2px solid var(--lotus-green) !important; outline-offset: 2px; }
+    .accordion-button:not(.collapsed) { background-color: var(--bs-primary-bg-subtle); color: var(--bs-body-color);}
+    .accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.125); }
   </style>
 </head>
 <body>
-  {# --- Navbar (ใช้โค้ดเดิมได้เลย สไตล์จะถูกปรับด้วย CSS ด้านบน) --- #}
-  <nav class="navbar navbar-expand-md navbar-dark fixed-top "> {# ลบ bg-dark เพราะกำหนดใน CSS แล้ว #}
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top ">
     <div class="container-fluid container">
       <a class="navbar-brand" href="{{ url_for('index') }}"><i class="bi bi-box-seam-fill me-2"></i>Fresh Inventory</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -119,6 +59,12 @@
         <ul class="navbar-nav me-auto mb-2 mb-md-0">
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" aria-current="page" href="{{ url_for('index') }}">ภาพรวมสต็อก</a>
+          </li>
+           <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+          </li>
+           <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'view_pricing' %}active{% endif %}" href="{{ url_for('view_pricing') }}">ราคาขาย</a> {# <-- Link ไปหน้า Pricing #}
           </li>
           <li class="nav-item">
             <a class="nav-link {% if request.endpoint in ['list_skus', 'add_sku', 'edit_sku'] %}active{% endif %}" href="{{ url_for('list_skus') }}">จัดการ SKU</a>
@@ -138,12 +84,14 @@
     </div>
   </nav>
 
-  {# --- Main Content (เหมือนเดิม) --- #}
   <main class="container mt-4">
+    {# Flash Messages Section #}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category if category in ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'] else 'info' }} alert-dismissible fade show" role="alert">
+          {% set alert_type = category if category in ['primary', 'success', 'danger', 'warning', 'info'] else 'secondary' %}
+          <div class="alert alert-{{ alert_type }} alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi {% if alert_type == 'success' %}bi-check-circle-fill{% elif alert_type == 'danger' %}bi-exclamation-triangle-fill{% elif alert_type == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
@@ -151,30 +99,32 @@
       {% endif %}
     {% endwith %}
 
-    {% block content %}
-    {% endblock %}
+    {# Main Content Block #}
+    {% block content %}{% endblock %}
   </main>
 
-  {# --- Footer (เหมือนเดิม) --- #}
   <footer class="container mt-5 pt-4 my-md-5 pt-md-5 border-top text-center text-muted">
       <small>&copy; {{ current_year }} Fresh Inventory App</small>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-  {# Block scripts (เหมือนเดิม) #}
   {% block scripts %}
   <script>
-    // Script ยืนยันการลบ (เหมือนเดิม)
+    // Activate Bootstrap Tooltips and Delete Confirmation
     document.addEventListener('DOMContentLoaded', function() {
         const deleteForms = document.querySelectorAll('form.delete-form');
         deleteForms.forEach(form => {
             form.addEventListener('submit', function(event) {
-                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ SKU นี้? สต็อกที่เกี่ยวข้องต้องไม่มีอยู่แล้ว')) {
                     event.preventDefault();
                 }
             });
         });
+         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]:not([title=""])'))
+         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+           return new bootstrap.Tooltip(tooltipTriggerEl, { trigger : 'hover' })
+         })
     });
   </script>
   {% endblock %}

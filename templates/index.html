@@ -19,8 +19,11 @@
         <label for="filter-location" class="form-label small fw-bold">สถานะ:</label>
         <select class="form-select form-select-sm" id="filter-location">
             <option value="">-- ทุกสถานะ --</option>
-            {% for key, config in location_configs.items() %}
-                <option value="{{ key }}">{{ config.title }}</option>
+            {% for key in location_order %} {# Use location_order to control order #}
+                {% set config = location_configs.get(key) %}
+                {% if config %}
+                    <option value="{{ key }}">{{ config.title }}</option>
+                {% endif %}
             {% endfor %}
         </select>
     </div>
@@ -43,6 +46,7 @@
 </div>
 {# --- End Filter Controls --- #}
 
+
 {# --- Inventory Table --- #}
 <div class="card shadow-sm">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -52,10 +56,10 @@
     <div class="card-body p-0">
         {% if inventory_batches %}
             <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0" id="inventory-table">
-                    <thead class="sticky-top table-light">
+                <table class="table table-sm table-hover mb-0" id="inventory-table"> {# Added ID #}
+                    <thead class="sticky-top table-light"> {# Sticky header #}
                         <tr>
-                            <th style="width: 10%;">สถานะ</th>
+                            <th style="width: 12%;">สถานะ</th>
                             <th style="width: 15%;">SKU</th>
                             <th>ชื่อสินค้า</th>
                             <th>ประเภท</th>
@@ -70,7 +74,7 @@
                             {% set sku_code = batch.sku %}
                             {% set sku_info = skus_data.get(sku_code) %}
                             {% set location_key = batch.location %}
-                            {% set config = location_configs.get(location_key, {'title': location_key, 'border_status_class': '', 'icon': 'bi-question-circle'}) %}
+                            {% set config = location_configs.get(location_key, {'title': location_key, 'border_status_class': '', 'badge_class': 'text-bg-light', 'icon': 'bi-question-circle'}) %}
                             {% set category_name = sku_info.category if sku_info else '' %}
                             {% set search_text = (sku_code + ' ' + (sku_info.name if sku_info else '')).lower() %}
 
@@ -78,9 +82,9 @@
                                 data-location="{{ location_key }}"
                                 data-category="{{ category_name }}"
                                 data-search="{{ search_text }}">
-                                <td>
-                                    <span title="{{ config.title }}">
-                                       <i class="bi {{ config.icon }} me-1"></i> <span class="d-none d-lg-inline">{{ config.title }}</span> {# ซ่อน Text บนจอเล็กกว่า LG #}
+                                <td class="status-badge-cell"> {# Cell for status badge #}
+                                    <span class="badge {{ config.badge_class }} shadow-sm" title="{{ config.title }}">
+                                       <i class="bi {{ config.icon }} me-1"></i> <span class="d-none d-lg-inline">{{ config.title }}</span>
                                     </span>
                                 </td>
                                 <td class="font-monospace">{{ sku_code }}</td>
@@ -88,14 +92,14 @@
                                 <td><small class="text-body-secondary">{{ category_name if category_name else '-' }}</small></td>
                                 <td class="text-end fw-bold">{{ batch.quantity }}</td>
                                 <td>
-                                    <span title="{{ format_iso_date(batch.expiry_date) }}">
-                                        {{ format_iso_date(batch.expiry_date, '%d/%m/%y') }}
+                                    <span title="เวลาหมดอายุเต็ม: {{ format_iso_date(batch.expiry_date) }}">
+                                        {{ format_iso_date(batch.expiry_date, '%d/%m/%y') }} {# Show only date #}
                                     </span>
                                 </td>
-                                <td class="text-nowrap">{{ format_time_remaining(batch.expiry_date) | safe }}</td> {# text-nowrap ป้องกันการตัดคำ #}
-                                <td><small class="text-body-secondary">{{ format_iso_date(batch.arrival_date, '%d/%m/%y') }}</small></td>
+                                <td class="text-nowrap">{{ format_time_remaining(batch.expiry_date) | safe }}</td>
+                                <td><small class="text-body-secondary" title="เวลารับเข้าเต็ม: {{ format_iso_date(batch.arrival_date) }}">{{ format_iso_date(batch.arrival_date, '%d/%m/%y') }}</small></td>
                             </tr>
-                        {% endfor %}
+                        {% endfor %} {# end batch loop #}
                          <tr id="no-results-row" style="display: none;">
                             <td colspan="8" class="text-center text-muted fst-italic p-4">ไม่พบรายการที่ตรงกับตัวกรอง</td>
                         </tr>
@@ -104,16 +108,17 @@
             </div>
         {% else %}
             <p class="text-center text-muted p-4 fst-italic">ไม่มีข้อมูลสต็อกสินค้าในระบบ</p>
-        {% endif %}
-    </div>
-</div>
+        {% endif %} {# end if inventory_batches #}
+    </div> {# end card-body #}
+</div> {# end card #}
 {# --- End Inventory Table --- #}
 
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
+{{ super() }} {# Includes delete confirmation and tooltips from base.html #}
 
+{# --- JavaScript for Filtering --- #}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const locationFilter = document.getElementById('filter-location');
@@ -138,13 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const rowLocation = row.dataset.location;
             const rowCategory = row.dataset.category;
             const rowSearchData = row.dataset.search;
-
             const locationMatch = !locationValue || rowLocation === locationValue;
             const categoryMatch = !categoryValue || rowCategory === categoryValue;
             const searchMatch = !searchValue || (rowSearchData && rowSearchData.includes(searchValue)); // Add check for rowSearchData existence
 
             if (locationMatch && categoryMatch && searchMatch) {
-                row.style.display = '';
+                row.style.display = ''; // Use default display style (table-row)
                 visibleRows++;
             } else {
                 row.style.display = 'none';
@@ -156,9 +160,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (visibleRowCountSpan) {
+             // const baseText = "รายการสต็อกทั้งหมด"; // Base text for card header
              if (isFiltering) {
+                 // Update card header text (optional)
+                 // document.querySelector('.card-header span:first-child').textContent = `ผลการกรอง (${visibleRows} รายการ)`;
                  visibleRowCountSpan.textContent = `${visibleRows} จาก ${totalRows}`;
              } else {
+                 // document.querySelector('.card-header span:first-child').textContent = baseText;
                  visibleRowCountSpan.textContent = totalRows;
              }
         }
@@ -167,23 +175,24 @@ document.addEventListener('DOMContentLoaded', function () {
          }
     }
 
+    // Add listeners safely
     if(locationFilter) locationFilter.addEventListener('change', filterTable);
     if(categoryFilter) categoryFilter.addEventListener('change', filterTable);
-    if(searchFilter) searchFilter.addEventListener('input', filterTable);
-
+    if(searchFilter) searchFilter.addEventListener('input', filterTable); // Use 'input' for faster reaction
     if(resetButton) {
         resetButton.addEventListener('click', function() {
             if(locationFilter) locationFilter.value = '';
             if(categoryFilter) categoryFilter.value = '';
             if(searchFilter) searchFilter.value = '';
-            filterTable();
+            filterTable(); // Re-apply filters after resetting
         });
     }
 
-    // Initial count update on load
+    // Update count on initial load
     if (visibleRowCountSpan) {
         visibleRowCountSpan.textContent = totalRows;
     }
 });
 </script>
+{# --- End JavaScript --- #}
 {% endblock %}

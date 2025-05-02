@@ -6,46 +6,60 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">รายการ SKU ทั้งหมด</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="{{ url_for('add_sku') }}" class="btn btn-success"><i class="bi bi-plus-circle me-1"></i>เพิ่ม SKU ใหม่</a>
+        <a href="{{ url_for('add_sku') }}" class="btn btn-success shadow-sm"><i class="bi bi-plus-circle me-1"></i>เพิ่ม SKU ใหม่</a>
     </div>
 </div>
 
 {% if skus %}
-<div class="table-responsive">
-    <table class="table table-striped table-hover table-bordered align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th scope="col">SKU Code</th>
-                <th scope="col">Product Name</th>
-                <th scope="col">Category</th>
-                <th scope="col" class="text-center">Shelf Life (Days)</th>
-                <th scope="col" class="text-center">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for sku_code, sku_data in skus.items() | sort %}
-            <tr>
-                <td class="font-monospace">{{ sku_code }}</td>
-                <td>{{ sku_data.name }}</td>
-                <td>{{ sku_data.category | default('-') }}</td>
-                <td class="text-center">{{ sku_data.shelf_life_days | default('-') }}</td>
-                <td class="text-center">
-                    <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary me-1" title="แก้ไข">
-                        <i class="bi bi-pencil-square"></i> Edit
-                    </a>
-                    <form method="post" action="{{ url_for('delete_sku', sku=sku_code) }}" class="d-inline delete-form">
-                        <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
-                            <i class="bi bi-trash"></i> Delete
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">SKU Code</th>
+                        <th scope="col">ชื่อสินค้า</th>
+                        <th scope="col">ประเภท</th>
+                        <th scope="col" class="text-center">อายุ (วัน)</th>
+                        <th scope="col" class="text-center">จุดสั่งซื้อ</th>
+                        <th scope="col" class="text-end">ราคา B2C</th>
+                        <th scope="col" class="text-end">ราคา B2B</th>
+                        <th scope="col" class="text-center" style="width: 15%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sku_code, sku_data in skus.items() | sort %}
+                    <tr>
+                        <td class="font-monospace">{{ sku_code }}</td>
+                        <td>{{ sku_data.name }}</td>
+                        <td>{{ sku_data.category | default('-') }}</td>
+                        <td class="text-center">{{ sku_data.shelf_life_days | default('-') }}</td>
+                        <td class="text-center">{{ sku_data.reorder_point if sku_data.reorder_point is not none else '-' }}</td>
+                        <td class="text-end">
+                            {{ "{:,.2f}".format(sku_data.price_b2c) if sku_data.price_b2c is not none else '-' }}
+                        </td>
+                        <td class="text-end">
+                             {{ "{:,.2f}".format(sku_data.price_b2b) if sku_data.price_b2b is not none else '-' }}
+                        </td>
+                        <td class="text-center text-nowrap">
+                            <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary me-1" title="แก้ไข">
+                                <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit</span>
+                            </a>
+                            <form method="post" action="{{ url_for('delete_sku', sku=sku_code) }}" class="d-inline delete-form">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบ">
+                                    <i class="bi bi-trash"></i> <span class="d-none d-md-inline">Delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% else %}
-<div class="alert alert-info text-center" role="alert">
+<div class="alert alert-info text-center shadow-sm" role="alert">
     ยังไม่มีข้อมูล SKU กรุณา <a href="{{ url_for('add_sku') }}" class="alert-link">เพิ่ม SKU ใหม่</a>
 </div>
 {% endif %}
@@ -53,5 +67,5 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
+{{ super() }} {# Includes delete confirmation #}
 {% endblock %}

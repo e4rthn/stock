@@ -7,17 +7,29 @@
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
              <div class="card-header bg-light">
-                 <h1 class="h3 mb-0">ย้ายสต็อกไปหน้าร้าน</h1>
+                 <h1 class="h3 mb-0 fw-normal"><i class="bi bi-arrow-right-square me-2"></i>ย้ายสต็อกไปหน้าร้าน</h1>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
+                {# Display validation errors if any #}
+                 {% if errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>กรุณาแก้ไขข้อผิดพลาด:</strong>
+                        <ul>
+                        {% for field, msg in errors.items() %}
+                            <li>{{ msg }}</li>
+                        {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                 {% endif %}
+
                 {% if skus %} {# skus here means available_skus_in_back #}
-                <form method="post" action="{{ url_for('move_to_display') }}">
+                <form method="post" action="{{ url_for('move_to_display') }}" novalidate>
                     <div class="mb-3">
-                        <label for="sku" class="form-label fw-bold">เลือก SKU (จากสต็อกหลังร้าน):<span class="text-danger">*</span></label>
-                        <select class="form-select" id="sku" name="sku" required>
-                            <option value="" selected disabled>-- กรุณาเลือก SKU --</option>
+                        <label for="sku" class="form-label fw-bold">เลือก SKU (จากสต็อกหลังร้าน):<span class="text-danger ms-1">*</span></label>
+                        <select class="form-select {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" required>
+                            <option value="" {% if not request.form.sku %}selected{% endif %} disabled>-- กรุณาเลือก SKU --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                                {# แสดงจำนวนรวมที่มีใน back_stock_agg #}
                                 {% set available_qty = back_stock_agg.get(sku_code, 0) %}
                                 <option value="{{ sku_code }}" {% if request.form.sku == sku_code %}selected{% endif %}>
                                     {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ available_qty }}
@@ -26,20 +38,22 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="quantity" class="form-label fw-bold">จำนวนที่จะย้าย:<span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1"
-                               value="{{ request.form.quantity or '' }}" required>
+                        <label for="quantity" class="form-label fw-bold">จำนวนที่จะย้าย:<span class="text-danger ms-1">*</span></label>
+                        <input type="number" class="form-control {% if errors and 'quantity' in errors %}is-invalid{% endif %}" id="quantity" name="quantity" min="1"
+                               value="{{ request.form.quantity or '' }}" required placeholder="ระบุจำนวน">
+                        <div class="form-text">ระบบจะย้ายจาก Batch ที่เก่าที่สุดก่อน</div>
                     </div>
-                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
-                        <button type="submit" class="btn btn-info"><i class="bi bi-arrow-right-square me-1"></i>ย้ายไปหน้าร้าน</button>
+                     <hr class="my-4">
+                     <div class="d-flex justify-content-end">
+                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        <button type="submit" class="btn btn-info shadow-sm"><i class="bi bi-check-lg me-1"></i>ยืนยันการย้าย</button>
                     </div>
                 </form>
                 {% else %}
                  <div class="alert alert-info text-center" role="alert">
                     ไม่มีสินค้าในสต็อกหลังร้านให้ย้าย
                  </div>
-                  <div class="text-center">
+                  <div class="text-center mt-3">
                      <a href="{{ url_for('index') }}" class="btn btn-secondary">กลับหน้าหลัก</a>
                  </div>
                 {% endif %}
@@ -55,26 +69,26 @@
 document.addEventListener('DOMContentLoaded', function() {
     const skuSelect = document.getElementById('sku');
     const quantityInput = document.getElementById('quantity');
-    // ใช้ back_stock_agg ที่เป็นยอดรวม
     const stockAggData = {{ back_stock_agg | tojson }};
 
     if (skuSelect && quantityInput && stockAggData) {
         skuSelect.addEventListener('change', function() {
             const selectedSku = this.value;
             if (selectedSku && stockAggData[selectedSku] !== undefined) {
-                quantityInput.max = stockAggData[selectedSku];
-                quantityInput.placeholder = `สูงสุด ${stockAggData[selectedSku]}`;
-                if (quantityInput.value && parseInt(quantityInput.value) > stockAggData[selectedSku]) {
-                    quantityInput.value = stockAggData[selectedSku]; // Set to max if exceeds
+                const maxQty = stockAggData[selectedSku];
+                quantityInput.max = maxQty;
+                quantityInput.placeholder = `สูงสุด ${maxQty}`;
+                if (quantityInput.value && parseInt(quantityInput.value) > maxQty) {
+                    quantityInput.value = maxQty; // Auto-adjust
                 }
             } else {
                 quantityInput.removeAttribute('max');
-                quantityInput.placeholder = '';
+                quantityInput.placeholder = 'ระบุจำนวน';
+                quantityInput.value = '';
             }
         });
-         if(skuSelect.value) {
-             skuSelect.dispatchEvent(new Event('change'));
-        }
+         if(skuSelect.value) { skuSelect.dispatchEvent(new Event('change')); }
+         else { quantityInput.placeholder = 'ระบุจำนวน'; }
     }
 });
 </script>

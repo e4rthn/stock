@@ -7,43 +7,59 @@
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
              <div class="card-header bg-light">
-                 <h1 class="h3 mb-0">เพิ่มสต็อก (เข้าหลังร้าน)</h1>
+                 <h1 class="h3 mb-0 fw-normal"><i class="bi bi-box-arrow-in-down me-2"></i>เพิ่มสต็อก (เข้าหลังร้าน)</h1>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4">
+                {# Display validation errors if any #}
+                 {% if errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>กรุณาแก้ไขข้อผิดพลาด:</strong>
+                        <ul>
+                        {% for field, msg in errors.items() %}
+                            <li>{{ msg }}</li>
+                        {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                 {% endif %}
+
                 {% if skus %}
-                <form method="post" action="{{ url_for('add_stock') }}">
+                <form method="post" action="{{ url_for('add_stock') }}" novalidate>
                     <div class="mb-3">
-                        <label for="sku" class="form-label fw-bold">เลือก SKU:<span class="text-danger">*</span></label>
-                        <select class="form-select" id="sku" name="sku" required>
-                            <option value="" selected disabled>-- กรุณาเลือก SKU --</option>
+                        <label for="sku" class="form-label fw-bold">เลือก SKU:<span class="text-danger ms-1">*</span></label>
+                        <select class="form-select {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" required>
+                            <option value="" {% if not (request.form.sku or selected_sku) %}selected{% endif %} disabled>-- กรุณาเลือก --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                            <option value="{{ sku_code }}" {% if request.form.sku == sku_code %}selected{% endif %}>
+                            <option value="{{ sku_code }}" {% if (request.form.sku or selected_sku) == sku_code %}selected{% endif %}>
                                 {{ sku_data.name }} ({{ sku_code }}) - {{ sku_data.shelf_life_days }} วัน
                             </option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                         <label for="arrival_date" class="form-label fw-bold">วันที่รับสินค้า:<span class="text-danger">*</span></label>
-                         <input type="date" class="form-control" id="arrival_date" name="arrival_date"
-                                value="{{ request.form.arrival_date or current_date }}" required>
-                         <div class="form-text">วันที่สินค้าล็อตนี้เข้ามาถึง</div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                             <label for="arrival_date" class="form-label fw-bold">วันที่รับสินค้า:<span class="text-danger ms-1">*</span></label>
+                             <input type="date" class="form-control {% if errors and 'arrival_date' in errors %}is-invalid{% endif %}" id="arrival_date" name="arrival_date"
+                                    value="{{ request.form.arrival_date or current_date }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label fw-bold">จำนวน:<span class="text-danger ms-1">*</span></label>
+                            <input type="number" class="form-control {% if errors and 'quantity' in errors %}is-invalid{% endif %}" id="quantity" name="quantity" min="1"
+                                   value="{{ request.form.quantity or '' }}" required placeholder="จำนวนชิ้น">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label fw-bold">จำนวน:<span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1"
-                               value="{{ request.form.quantity or '' }}" required>
-                    </div>
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-down me-1"></i>เพิ่มสต็อก</button>
+                     <div class="form-text mb-3">สินค้าที่เพิ่มจะเข้าสต็อกหลังร้าน และเริ่มนับวันหมดอายุจากวันที่รับสินค้า</div>
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-end">
+                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>ยืนยันการเพิ่มสต็อก</button>
                     </div>
                 </form>
                 {% else %}
                  <div class="alert alert-warning text-center" role="alert">
                     ไม่พบข้อมูล SKU กรุณา <a href="{{ url_for('add_sku') }}" class="alert-link">เพิ่ม SKU</a> ก่อน
                  </div>
-                 <div class="text-center">
+                 <div class="text-center mt-3">
                      <a href="{{ url_for('index') }}" class="btn btn-secondary">กลับหน้าหลัก</a>
                  </div>
                 {% endif %}
@@ -51,8 +67,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
 {% endblock %}

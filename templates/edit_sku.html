@@ -7,35 +7,81 @@
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
-                 <h1 class="h3 mb-0">แก้ไข SKU: <span class="font-monospace">{{ sku_code }}</span></h1>
+                 <h1 class="h3 mb-0 fw-normal"><i class="bi bi-pencil-square me-2"></i>แก้ไข SKU: <span class="font-monospace">{{ sku_code }}</span></h1>
             </div>
-            <div class="card-body">
-                <form method="post" action="{{ url_for('edit_sku', sku=sku_code) }}">
+            <div class="card-body p-4">
+                 {# Display validation errors if any #}
+                 {% if errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>กรุณาแก้ไขข้อผิดพลาด:</strong>
+                        <ul>
+                        {% for field, msg in errors.items() %}
+                            <li>{{ msg }}</li>
+                        {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                 {% endif %}
+
+                <form method="post" action="{{ url_for('edit_sku', sku=sku_code) }}" novalidate>
+                    {# --- ข้อมูลหลัก --- #}
                     <div class="mb-3">
-                        <label for="name" class="form-label fw-bold">ชื่อสินค้า:<span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name"
-                               value="{{ sku_data.name }}" required>
+                        <label for="name" class="form-label fw-bold">ชื่อสินค้า:<span class="text-danger ms-1">*</span></label>
+                        {# Use request.form first on error, fallback to sku_data #}
+                        <input type="text" class="form-control {% if errors and 'name' in errors %}is-invalid{% endif %}" id="name" name="name"
+                               value="{{ request.form.name if request.method == 'POST' else sku_data.name }}" required>
                     </div>
                     <div class="mb-3">
-                         <label for="category" class="form-label fw-bold">ประเภท:<span class="text-danger">*</span></label>
-                         <select class="form-select" id="category" name="category" required>
+                         <label for="category" class="form-label fw-bold">ประเภท:<span class="text-danger ms-1">*</span></label>
+                         <select class="form-select {% if errors and 'category' in errors %}is-invalid{% endif %}" id="category" name="category" required>
                              <option value="" disabled>-- กรุณาเลือก --</option>
                              {% for category_name in categories %}
-                             <option value="{{ category_name }}" {% if sku_data.category == category_name %}selected{% endif %}>
+                             <option value="{{ category_name }}" {% if (request.form.category if request.method == 'POST' else sku_data.category) == category_name %}selected{% endif %}>
                                  {{ category_name }}
                              </option>
                              {% endfor %}
                          </select>
                     </div>
-                    <div class="mb-3">
-                         <label for="shelf_life_days" class="form-label fw-bold">อายุสินค้า (วัน):<span class="text-danger">*</span></label>
-                         <input type="number" class="form-control" id="shelf_life_days" name="shelf_life_days"
-                                value="{{ sku_data.shelf_life_days }}" min="1" required>
-                          <div class="form-text">จำนวนวันนับจากวันที่รับเข้า (ต้องมากกว่า 0)</div>
+                     {# --- ข้อมูลการจัดการสต็อก --- #}
+                     <h5 class="mt-4 mb-3 border-bottom pb-2">ข้อมูลสต็อก</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label for="shelf_life_days" class="form-label fw-bold">อายุสินค้า (วัน):<span class="text-danger ms-1">*</span></label>
+                            <input type="number" class="form-control {% if errors and 'shelf_life_days' in errors %}is-invalid{% endif %}" id="shelf_life_days" name="shelf_life_days"
+                                   value="{{ request.form.shelf_life_days if request.method == 'POST' else sku_data.shelf_life_days }}" min="1" required>
+                            <div class="form-text">วันนับจากวันที่รับเข้า (>= 1)</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                             <label for="reorder_point" class="form-label fw-bold">จุดสั่งซื้อขั้นต่ำ:</label>
+                             <input type="number" class="form-control {% if errors and 'reorder_point' in errors %}is-invalid{% endif %}" id="reorder_point" name="reorder_point"
+                                    value="{{ request.form.reorder_point if request.method == 'POST' else (sku_data.reorder_point if sku_data.reorder_point is not none else '') }}"
+                                    min="0" placeholder="เว้นว่าง=ไม่ตั้งค่า">
+                             <div class="form-text">จำนวนขั้นต่ำที่ควรมี (>= 0)</div>
+                        </div>
                     </div>
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{{ url_for('list_skus') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>บันทึก</button>
+                     {# --- ข้อมูลราคา --- #}
+                     <h5 class="mt-4 mb-3 border-bottom pb-2">ข้อมูลราคาขาย</h5>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                             <label for="price_b2c" class="form-label fw-bold">ราคา B2C (บาท):</label>
+                             <input type="number" class="form-control {% if errors and 'price_b2c' in errors %}is-invalid{% endif %}" id="price_b2c" name="price_b2c"
+                                    value="{{ request.form.price_b2c if request.method == 'POST' else (sku_data.price_b2c if sku_data.price_b2c is not none else '') }}"
+                                    min="0" step="0.01" placeholder="เช่น 150.00">
+                          <div class="form-text">ราคาลูกค้าทั่วไป</div>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                             <label for="price_b2b" class="form-label fw-bold">ราคา B2B (บาท):</label>
+                             <input type="number" class="form-control {% if errors and 'price_b2b' in errors %}is-invalid{% endif %}" id="price_b2b" name="price_b2b"
+                                     value="{{ request.form.price_b2b if request.method == 'POST' else (sku_data.price_b2b if sku_data.price_b2b is not none else '') }}"
+                                     min="0" step="0.01" placeholder="เช่น 120.50">
+                               <div class="form-text">ราคาลูกค้าธุรกิจ</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-end">
+                        <a href="{{ url_for('list_skus') }}" class="btn btn-secondary me-2">ยกเลิก</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>บันทึกการเปลี่ยนแปลง</button>
                     </div>
                 </form>
             </div>
