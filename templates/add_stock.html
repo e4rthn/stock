@@ -1,49 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}เพิ่มสต็อก (เข้าหลังร้าน){% endblock %}
+{% block title %}เพิ่มสต็อก{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
-             <div class="card-header">
+             <div class="card-header bg-light">
                  <h1 class="h3 mb-0">เพิ่มสต็อก (เข้าหลังร้าน)</h1>
             </div>
             <div class="card-body">
                 {% if skus %}
                 <form method="post" action="{{ url_for('add_stock') }}">
                     <div class="mb-3">
-                        <label for="sku" class="form-label">เลือก SKU:<span class="text-danger">*</span></label>
+                        <label for="sku" class="form-label fw-bold">เลือก SKU:<span class="text-danger">*</span></label>
                         <select class="form-select" id="sku" name="sku" required>
                             <option value="" selected disabled>-- กรุณาเลือก SKU --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
                             <option value="{{ sku_code }}" {% if request.form.sku == sku_code %}selected{% endif %}>
-                                {{ sku_data.name }} ({{ sku_code }}) - Shelf Life: {{ sku_data.shelf_life_days }} วัน
+                                {{ sku_data.name }} ({{ sku_code }}) - {{ sku_data.shelf_life_days }} วัน
                             </option>
                             {% endfor %}
                         </select>
                     </div>
-                    {# --- เพิ่มช่อง Arrival Date --- #}
                     <div class="mb-3">
-                         <label for="arrival_date" class="form-label">วันที่รับสินค้า (Arrival Date):<span class="text-danger">*</span></label>
-                         {# ใช้ current_date ที่ส่งมาจาก Flask เป็นค่า default #}
+                         <label for="arrival_date" class="form-label fw-bold">วันที่รับสินค้า:<span class="text-danger">*</span></label>
                          <input type="date" class="form-control" id="arrival_date" name="arrival_date"
                                 value="{{ request.form.arrival_date or current_date }}" required>
                          <div class="form-text">วันที่สินค้าล็อตนี้เข้ามาถึง</div>
                     </div>
-                    {# --- จบส่วน Arrival Date --- #}
                     <div class="mb-3">
-                        <label for="quantity" class="form-label">จำนวน:<span class="text-danger">*</span></label>
+                        <label for="quantity" class="form-label fw-bold">จำนวน:<span class="text-danger">*</span></label>
                         <input type="number" class="form-control" id="quantity" name="quantity" min="1"
                                value="{{ request.form.quantity or '' }}" required>
                     </div>
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                          <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
                         <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-down me-1"></i>เพิ่มสต็อก</button>
                     </div>
                 </form>
                 {% else %}
-                 {# ... (ส่วนแจ้งเตือนถ้าไม่มี SKU เหมือนเดิม) ... #}
                  <div class="alert alert-warning text-center" role="alert">
                     ไม่พบข้อมูล SKU กรุณา <a href="{{ url_for('add_sku') }}" class="alert-link">เพิ่ม SKU</a> ก่อน
                  </div>
@@ -58,6 +54,5 @@
 {% endblock %}
 
 {% block scripts %}
-{# Optional: อาจจะเพิ่ม date picker library ถ้าต้องการ UI ที่สวยขึ้น #}
 {{ super() }}
 {% endblock %}

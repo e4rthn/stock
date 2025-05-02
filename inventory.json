@@ -1,14 +1,6 @@
 {
     "batches": [
         {
-            "batch_id": "9bea55a8-db7a-4873-9c85-25d576c0dedb",
-            "sku": "057890111",
-            "quantity": 5,
-            "location": "back_stock",
-            "arrival_date": "2025-05-02T11:11:40.395387Z",
-            "expiry_date": "2025-05-07T11:11:40.395387Z"
-        },
-        {
             "batch_id": "3bb98ad7-15e0-4384-9687-388f83ef0b6d",
             "sku": "001",
             "quantity": 5,
@@ -31,6 +23,30 @@
             "location": "back_stock",
             "arrival_date": "2025-05-02T11:30:53.479310Z",
             "expiry_date": "2025-05-07T11:30:53.479310Z"
+        },
+        {
+            "batch_id": "3d4bc7b7-f614-427d-b10d-6dcd0f675994",
+            "sku": "057890111",
+            "quantity": 5,
+            "location": "display",
+            "arrival_date": "2025-05-02T11:11:40.395387Z",
+            "expiry_date": "2025-05-07T11:11:40.395387Z"
+        },
+        {
+            "batch_id": "dd6ec673-afa9-40c9-8ee6-d7bfd8515665",
+            "sku": "057890111",
+            "quantity": 5,
+            "location": "back_stock",
+            "arrival_date": "2025-05-01T14:11:05.532426Z",
+            "expiry_date": "2025-05-06T14:11:05.532426Z"
+        },
+        {
+            "batch_id": "357f2051-a670-4180-8fc6-069000cfe36f",
+            "sku": "057890111",
+            "quantity": 5,
+            "location": "back_stock",
+            "arrival_date": "2025-05-02T14:11:32.864340Z",
+            "expiry_date": "2025-05-07T14:11:32.864340Z"
         }
     ]
 }

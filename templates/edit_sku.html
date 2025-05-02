@@ -6,23 +6,20 @@
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
-            <div class="card-header">
+            <div class="card-header bg-light">
                  <h1 class="h3 mb-0">แก้ไข SKU: <span class="font-monospace">{{ sku_code }}</span></h1>
             </div>
             <div class="card-body">
-                {# action ยังคงเดิม #}
                 <form method="post" action="{{ url_for('edit_sku', sku=sku_code) }}">
                     <div class="mb-3">
-                        <label for="name" class="form-label">Product Name:<span class="text-danger">*</span></label>
-                        {# ใช้ค่าจาก sku_data ที่ส่งมา #}
+                        <label for="name" class="form-label fw-bold">ชื่อสินค้า:<span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="name" name="name"
                                value="{{ sku_data.name }}" required>
                     </div>
                     <div class="mb-3">
-                         <label for="category" class="form-label">Category:<span class="text-danger">*</span></label>
+                         <label for="category" class="form-label fw-bold">ประเภท:<span class="text-danger">*</span></label>
                          <select class="form-select" id="category" name="category" required>
-                             <option value="" disabled>-- กรุณาเลือกประเภท --</option>
-                             {# วนลูปสร้าง option จาก categories ที่ส่งมาจาก app.py #}
+                             <option value="" disabled>-- กรุณาเลือก --</option>
                              {% for category_name in categories %}
                              <option value="{{ category_name }}" {% if sku_data.category == category_name %}selected{% endif %}>
                                  {{ category_name }}
@@ -31,22 +28,14 @@
                          </select>
                     </div>
                     <div class="mb-3">
-                         <label for="shelf_life_days" class="form-label">Shelf Life (Days):<span class="text-danger">*</span></label>
+                         <label for="shelf_life_days" class="form-label fw-bold">อายุสินค้า (วัน):<span class="text-danger">*</span></label>
                          <input type="number" class="form-control" id="shelf_life_days" name="shelf_life_days"
                                 value="{{ sku_data.shelf_life_days }}" min="1" required>
-                          <div class="form-text">อายุสินค้าเป็นจำนวนวัน (ต้องมากกว่า 0)</div>
+                          <div class="form-text">จำนวนวันนับจากวันที่รับเข้า (ต้องมากกว่า 0)</div>
                     </div>
-
-                    {# ลบ Textarea ของ Description ออก #}
-                    {# <div class="mb-3">
-                        <label for="description" class="form-label">Description:</label>
-                        <textarea class="form-control" id="description" name="description"
-                                  rows="3">{{ request.form.description if request.form else sku_data.description }}</textarea>
-                    </div> #}
-
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                         <a href="{{ url_for('list_skus') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>บันทึกการเปลี่ยนแปลง</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>บันทึก</button>
                     </div>
                 </form>
             </div>

@@ -6,38 +6,38 @@
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card shadow-sm">
-             <div class="card-header">
-                 <h1 class="h3 mb-0">บันทึกการขาย (จากหน้าร้าน)</h1>
+             <div class="card-header bg-light">
+                 <h1 class="h3 mb-0">บันทึกการขาย (จากหน้าร้าน/RTC)</h1>
             </div>
             <div class="card-body">
-                 {% if skus and display_stock %}
+                 {% if skus %} {# skus here means available_skus_to_sell #}
                  <form method="post" action="{{ url_for('record_sale') }}">
                     <div class="mb-3">
-                        <label for="sku" class="form-label">เลือก SKU (จากสินค้าหน้าร้าน):</label>
+                        <label for="sku" class="form-label fw-bold">เลือก SKU (จากสินค้าพร้อมขาย):<span class="text-danger">*</span></label>
                         <select class="form-select" id="sku" name="sku" required>
                             <option value="" selected disabled>-- กรุณาเลือก SKU --</option>
-                             {# วน loop เฉพาะ SKU ที่มีใน display_stock #}
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                              {% if sku_code in display_stock %}
-                               <option value="{{ sku_code }}">
-                                   {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ display_stock[sku_code] }}
+                                {# แสดงจำนวนรวมที่มีใน display_stock_agg #}
+                                {% set available_qty = display_stock_agg.get(sku_code, 0) %}
+                               <option value="{{ sku_code }}" {% if request.form.sku == sku_code %}selected{% endif %}>
+                                   {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ available_qty }}
                                </option>
-                              {% endif %}
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="quantity" class="form-label">จำนวนที่ขาย:</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        <label for="quantity" class="form-label fw-bold">จำนวนที่ขาย:<span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1"
+                               value="{{ request.form.quantity or '' }}" required>
                     </div>
-                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                     <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                          <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
                         <button type="submit" class="btn btn-warning"><i class="bi bi-cart-dash me-1"></i>บันทึกการขาย</button>
                     </div>
                 </form>
                  {% else %}
-                 <div class="alert alert-warning text-center" role="alert">
-                    ไม่มีสินค้าหน้าร้านสำหรับขาย หรือไม่พบข้อมูล SKU ที่เกี่ยวข้อง
+                 <div class="alert alert-info text-center" role="alert">
+                     ไม่มีสินค้าพร้อมขาย (หน้าร้าน/RTC)
                  </div>
                   <div class="text-center">
                      <a href="{{ url_for('index') }}" class="btn btn-secondary">กลับหน้าหลัก</a>
@@ -49,26 +49,23 @@
 </div>
 {% endblock %}
 
-{# {% extends "base.html" %} ... ส่วนอื่นๆ เหมือนเดิม ... #}
-
 {% block scripts %}
-{# ใช้ display_stock_agg ที่ส่งมาจาก Flask ซึ่งเป็นยอดรวมของแต่ละ SKU ใน display #}
+{{ super() }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const skuSelect = document.getElementById('sku');
     const quantityInput = document.getElementById('quantity');
-     // เปลี่ยนชื่อตัวแปร และใช้ display_stock_agg
+    // ใช้ display_stock_agg ที่เป็นยอดรวม
     const stockAggData = {{ display_stock_agg | tojson }};
 
     if (skuSelect && quantityInput && stockAggData) {
         skuSelect.addEventListener('change', function() {
             const selectedSku = this.value;
-             // ใช้ stockAggData ในการกำหนด max
             if (selectedSku && stockAggData[selectedSku] !== undefined) {
                 quantityInput.max = stockAggData[selectedSku];
                 quantityInput.placeholder = `สูงสุด ${stockAggData[selectedSku]}`;
-                if (parseInt(quantityInput.value) > stockAggData[selectedSku]) {
-                    quantityInput.value = '';
+                if (quantityInput.value && parseInt(quantityInput.value) > stockAggData[selectedSku]) {
+                    quantityInput.value = stockAggData[selectedSku]; // Set to max if exceeds
                 }
             } else {
                 quantityInput.removeAttribute('max');
@@ -81,5 +78,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-{{ super() }}
 {% endblock %}
