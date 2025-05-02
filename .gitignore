@@ -1,7 +1,13 @@
+# Data files
+skus.json
+inventory.json
+
+# Environment files (ควรใส่ไปด้วย)
 venv/
+*.sqlite
+*.db
+
+# Python cache files (ควรใส่ไปด้วย)
 __pycache__/
 *.pyc
-.vscode/
-.DS_Store
-# inventory.json  <-- ถ้าไม่อยากให้ข้อมูลเริ่มต้นขึ้นไปด้วย ก็เอา # ออก
-# skus.json       <-- ถ้าไม่อยากให้ข้อมูลเริ่มต้นขึ้นไปด้วย ก็เอา # ออก
+*.pyo
