@@ -63,10 +63,12 @@
                             <th style="width: 15%;">SKU</th>
                             <th>ชื่อสินค้า</th>
                             <th>ประเภท</th>
-                            <th class="text-end" style="width: 8%;">จำนวน</th>
-                            <th style="width: 12%;">วันหมดอายุ</th>
-                            <th style="width: 15%;">เวลาคงเหลือ</th>
-                            <th style="width: 10%;">วันที่รับเข้า</th>
+                            <th class="text-center" style="width: 8%;">จำนวน</th>
+                            {# --- เพิ่ม text-center --- #}
+                            <th class="text-center" style="width: 12%;">วันหมดอายุ</th>
+                            <th class="text-center" style="width: 15%;">เวลาคงเหลือ</th>
+                            {# --- เพิ่ม text-center --- #}
+                            <th class="text-center" style="width: 10%;">วันที่รับเข้า</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,17 +92,20 @@
                                 <td class="font-monospace">{{ sku_code }}</td>
                                 <td>{{ sku_info.name if sku_info else '???' }}</td>
                                 <td><small class="text-body-secondary">{{ category_name if category_name else '-' }}</small></td>
-                                <td class="text-end fw-bold">{{ batch.quantity }}</td>
-                                <td>
+                                <td class="text-center fw-bold">{{ batch.quantity }}</td>
+                                {# --- เพิ่ม text-center --- #}
+                                <td class="text-center">
                                     <span title="เวลาหมดอายุเต็ม: {{ format_iso_date(batch.expiry_date) }}">
                                         {{ format_iso_date(batch.expiry_date, '%d/%m/%y') }} {# Show only date #}
                                     </span>
                                 </td>
-                                <td class="text-nowrap">{{ format_time_remaining(batch.expiry_date) | safe }}</td>
-                                <td><small class="text-body-secondary" title="เวลารับเข้าเต็ม: {{ format_iso_date(batch.arrival_date) }}">{{ format_iso_date(batch.arrival_date, '%d/%m/%y') }}</small></td>
+                                <td class="text-nowrap text-center">{{ format_time_remaining(batch.expiry_date) | safe }}</td>
+                                {# --- เพิ่ม text-center --- #}
+                                <td class="text-center"><small class="text-body-secondary" title="เวลารับเข้าเต็ม: {{ format_iso_date(batch.arrival_date) }}">{{ format_iso_date(batch.arrival_date, '%d/%m/%y') }}</small></td>
                             </tr>
                         {% endfor %} {# end batch loop #}
                          <tr id="no-results-row" style="display: none;">
+                            {# --- เปลี่ยน colspan เป็น 8 ให้ตรงกับจำนวนคอลัมน์ --- #}
                             <td colspan="8" class="text-center text-muted fst-italic p-4">ไม่พบรายการที่ตรงกับตัวกรอง</td>
                         </tr>
                     </tbody>

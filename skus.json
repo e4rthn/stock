@@ -3,6 +3,7 @@
         "name": "ไก่ย่างนมสด",
         "category": "ไก่",
         "shelf_life_days": 5,
+        "reorder_point": null,
         "price_b2c": null,
         "price_b2b": null
     },
@@ -10,13 +11,23 @@
         "name": "ไก่",
         "category": "ไก่",
         "shelf_life_days": 6,
-        "price_b2c": null,
-        "price_b2b": null
+        "reorder_point": null,
+        "price_b2c": 150.0,
+        "price_b2b": 120.0
     },
     "002": {
         "name": "หมู",
         "category": "หมู",
         "shelf_life_days": 6,
+        "reorder_point": null,
+        "price_b2c": null,
+        "price_b2b": null
+    },
+    "กกหกห": {
+        "name": "หกหกกห",
+        "category": "ผลไม้",
+        "shelf_life_days": 5,
+        "reorder_point": null,
         "price_b2c": null,
         "price_b2b": null
     }

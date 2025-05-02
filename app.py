@@ -477,26 +477,19 @@ def add_sku():
 def edit_sku(sku):
     """หน้าฟอร์มสำหรับแก้ไขข้อมูล SKU ที่มีอยู่"""
     skus_data = load_skus()
-
-    # ตรวจสอบว่า SKU ที่ต้องการแก้ไขมีอยู่จริงหรือไม่
     if sku not in skus_data:
         flash(f"ไม่พบ SKU Code: {sku}", "danger")
         return redirect(url_for('list_skus'))
 
-    # ค่าเริ่มต้นสำหรับ context
-    render_context = {
-        'categories': ALLOWED_CATEGORIES,
-        'errors': {},
-        'sku_code': sku, # ส่ง sku code ไปด้วย
-        'form_data': skus_data[sku].copy() # ใช้ข้อมูลเดิมเป็นค่าเริ่มต้นของฟอร์ม
-    }
+    # ดึงข้อมูล SKU เดิมเก็บไว้ก่อน
+    original_sku_data = skus_data[sku]
 
     if request.method == 'POST':
-        # ดึงข้อมูลจากฟอร์ม
+        # ดึงข้อมูลจากฟอร์มที่ส่งมา
         form_data = request.form.to_dict()
-        render_context['form_data'] = form_data # อัปเดต form_data ด้วยค่าที่ user กรอกล่าสุด
+        errors = {}
 
-        # ดึงค่าต่างๆ จาก form_data (เหมือนตอน Add)
+        # --- ส่วน Validation (เหมือนเดิม แต่ใช้ form_data) ---
         name = form_data.get('name', '').strip()
         category = form_data.get('category', '').strip()
         shelf_life_str = form_data.get('shelf_life_days', '').strip()
@@ -504,16 +497,15 @@ def edit_sku(sku):
         price_b2c_str = form_data.get('price_b2c', '').strip()
         price_b2b_str = form_data.get('price_b2b', '').strip()
 
-        errors = {}
-
-        # --- Validation (เหมือนตอน Add แต่ไม่ต้องเช็ค SKU ซ้ำ) ---
+        # --- ใส่ Logic การ Validate ทั้งหมดที่นี่ ---
+        # (ตรวจสอบค่าว่าง, ประเภทข้อมูล, เงื่อนไขต่างๆ เหมือนตอน add_sku)
+        # ตัวอย่าง:
         if not name: errors['name'] = "ต้องระบุชื่อสินค้า"
         if not category: errors['category'] = "ต้องเลือกประเภทสินค้า"
         elif category not in ALLOWED_CATEGORIES: errors['category'] = "ประเภทสินค้าไม่ถูกต้อง"
 
         shelf_life_days = None
-        if not shelf_life_str:
-            errors['shelf_life_days'] = "ต้องระบุอายุสินค้า (วัน)"
+        if not shelf_life_str: errors['shelf_life_days'] = "ต้องระบุอายุสินค้า (วัน)"
         else:
             try:
                 sl_val = int(shelf_life_str)
@@ -544,35 +536,40 @@ def edit_sku(sku):
                 if p_val < 0: errors['price_b2b'] = "ราคา B2B ต้องไม่ติดลบ"
                 else: price_b2b = p_val
             except ValueError: errors['price_b2b'] = "รูปแบบราคา B2B ไม่ถูกต้อง"
+        # --- จบส่วน Validation ---
 
-        render_context['errors'] = errors
 
-        # ถ้ามี errors
         if errors:
-            for field, msg in errors.items():
-                flash(f"{field.replace('_', ' ').title()}: {msg}", "warning")
-            # Render ฟอร์มเดิมพร้อม error และข้อมูลที่ user กรอก
-            return render_template('edit_sku.html', **render_context)
+            # ถ้ามี Error ให้แสดง Flash และ Render ฟอร์มใหม่
+            flash("กรุณาแก้ไขข้อผิดพลาดในฟอร์ม", "warning")
+            # ส่งข้อมูลกลับไปให้ Template อย่างครบถ้วน
+            return render_template('edit_sku.html',
+                                   sku_code=sku,
+                                   sku_data=original_sku_data, # ข้อมูลเดิม
+                                   form_data=form_data,        # ข้อมูลที่กรอกล่าสุด (จาก request.form)
+                                   categories=ALLOWED_CATEGORIES,
+                                   errors=errors)
+        else:
+            # ถ้าไม่มี Error (Validation ผ่าน) -> อัปเดตข้อมูล
+            skus_data[sku]['name'] = name # ใช้ค่าที่ผ่านการ validate แล้ว
+            skus_data[sku]['category'] = category
+            skus_data[sku]['shelf_life_days'] = shelf_life_days
+            skus_data[sku]['reorder_point'] = reorder_point
+            skus_data[sku]['price_b2c'] = price_b2c
+            skus_data[sku]['price_b2b'] = price_b2b
 
-        # --- ถ้าไม่มี errors ---
-        # อัปเดตข้อมูลใน dictionary ของ skus_data
-        skus_data[sku]['name'] = name
-        skus_data[sku]['category'] = category
-        skus_data[sku]['shelf_life_days'] = shelf_life_days
-        skus_data[sku]['reorder_point'] = reorder_point
-        skus_data[sku]['price_b2c'] = price_b2c
-        skus_data[sku]['price_b2b'] = price_b2b
+            save_skus(skus_data) # บันทึกข้อมูล
+            flash(f"แก้ไขข้อมูล SKU '{sku}' เรียบร้อยแล้ว", "success")
+            return redirect(url_for('list_skus')) # Redirect กลับไปหน้า list
 
-        # บันทึกข้อมูลที่อัปเดตแล้ว
-        save_skus(skus_data)
-
-        flash(f"แก้ไขข้อมูล SKU '{sku}' เรียบร้อยแล้ว", "success")
-        return redirect(url_for('list_skus'))
-
-    else: # GET request
-        # แสดงฟอร์มพร้อมข้อมูลเดิมของ SKU นั้นๆ
-        # form_data ถูกตั้งค่าไว้แล้วตอนต้นด้วยข้อมูลปัจจุบัน
-        return render_template('edit_sku.html', **render_context)
+    else: # GET request (โหลดหน้าครั้งแรก)
+        # แสดงฟอร์มพร้อมข้อมูลเดิมของ SKU
+        return render_template('edit_sku.html',
+                               sku_code=sku,
+                               sku_data=original_sku_data, # ส่งข้อมูลเดิมไปในชื่อ sku_data
+                               form_data=None,             # GET request ไม่มี form_data
+                               categories=ALLOWED_CATEGORIES,
+                               errors={})                  # ไม่มี Error ตอนโหลดครั้งแรก
 
 
 @app.route('/delete_sku/<sku>', methods=['POST'], endpoint='delete_sku')

@@ -10,7 +10,7 @@
                  <h1 class="h3 mb-0 fw-normal"><i class="bi bi-pencil-square me-2"></i>แก้ไข SKU: <span class="font-monospace">{{ sku_code }}</span></h1>
             </div>
             <div class="card-body p-4">
-                 {# Display validation errors if any #}
+                 {# --- ส่วนแสดง Error --- #}
                  {% if errors %}
                     <div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <strong>กรุณาแก้ไขข้อผิดพลาด:</strong>
@@ -23,20 +23,25 @@
                     </div>
                  {% endif %}
 
+                {# --- เลือกข้อมูลที่จะใช้แสดงในฟอร์ม --- #}
+                {# ถ้ามี form_data (คือเกิด error ตอน POST) ให้ใช้ form_data ก่อน, ถ้าไม่ก็ใช้ sku_data (ตอน GET) #}
+                {% set current_data = form_data if form_data else sku_data %}
+
                 <form method="post" action="{{ url_for('edit_sku', sku=sku_code) }}" novalidate>
                     {# --- ข้อมูลหลัก --- #}
                     <div class="mb-3">
                         <label for="name" class="form-label fw-bold">ชื่อสินค้า:<span class="text-danger ms-1">*</span></label>
-                        {# Use request.form first on error, fallback to sku_data #}
+                        {# ใช้ current_data.name #}
                         <input type="text" class="form-control {% if errors and 'name' in errors %}is-invalid{% endif %}" id="name" name="name"
-                               value="{{ request.form.name if request.method == 'POST' else sku_data.name }}" required>
+                               value="{{ current_data.name | default('') }}" required>
                     </div>
                     <div class="mb-3">
                          <label for="category" class="form-label fw-bold">ประเภท:<span class="text-danger ms-1">*</span></label>
                          <select class="form-select {% if errors and 'category' in errors %}is-invalid{% endif %}" id="category" name="category" required>
                              <option value="" disabled>-- กรุณาเลือก --</option>
                              {% for category_name in categories %}
-                             <option value="{{ category_name }}" {% if (request.form.category if request.method == 'POST' else sku_data.category) == category_name %}selected{% endif %}>
+                             {# ใช้ current_data.category #}
+                             <option value="{{ category_name }}" {% if current_data.category == category_name %}selected{% endif %}>
                                  {{ category_name }}
                              </option>
                              {% endfor %}
@@ -47,14 +52,16 @@
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
                             <label for="shelf_life_days" class="form-label fw-bold">อายุสินค้า (วัน):<span class="text-danger ms-1">*</span></label>
+                            {# ใช้ current_data.shelf_life_days #}
                             <input type="number" class="form-control {% if errors and 'shelf_life_days' in errors %}is-invalid{% endif %}" id="shelf_life_days" name="shelf_life_days"
-                                   value="{{ request.form.shelf_life_days if request.method == 'POST' else sku_data.shelf_life_days }}" min="1" required>
+                                   value="{{ current_data.shelf_life_days | default('') }}" min="1" required>
                             <div class="form-text">วันนับจากวันที่รับเข้า (>= 1)</div>
                         </div>
                         <div class="col-md-6 mb-3">
                              <label for="reorder_point" class="form-label fw-bold">จุดสั่งซื้อขั้นต่ำ:</label>
+                             {# ใช้ current_data.reorder_point #}
                              <input type="number" class="form-control {% if errors and 'reorder_point' in errors %}is-invalid{% endif %}" id="reorder_point" name="reorder_point"
-                                    value="{{ request.form.reorder_point if request.method == 'POST' else (sku_data.reorder_point if sku_data.reorder_point is not none else '') }}"
+                                    value="{{ current_data.reorder_point if current_data.reorder_point is not none else '' }}"
                                     min="0" placeholder="เว้นว่าง=ไม่ตั้งค่า">
                              <div class="form-text">จำนวนขั้นต่ำที่ควรมี (>= 0)</div>
                         </div>
@@ -64,15 +71,17 @@
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
                              <label for="price_b2c" class="form-label fw-bold">ราคา B2C (บาท):</label>
+                             {# ใช้ current_data.price_b2c #}
                              <input type="number" class="form-control {% if errors and 'price_b2c' in errors %}is-invalid{% endif %}" id="price_b2c" name="price_b2c"
-                                    value="{{ request.form.price_b2c if request.method == 'POST' else (sku_data.price_b2c if sku_data.price_b2c is not none else '') }}"
+                                    value="{{ current_data.price_b2c if current_data.price_b2c is not none else '' }}"
                                     min="0" step="0.01" placeholder="เช่น 150.00">
                           <div class="form-text">ราคาลูกค้าทั่วไป</div>
                         </div>
                          <div class="col-md-6 mb-3">
                              <label for="price_b2b" class="form-label fw-bold">ราคา B2B (บาท):</label>
+                             {# ใช้ current_data.price_b2b #}
                              <input type="number" class="form-control {% if errors and 'price_b2b' in errors %}is-invalid{% endif %}" id="price_b2b" name="price_b2b"
-                                     value="{{ request.form.price_b2b if request.method == 'POST' else (sku_data.price_b2b if sku_data.price_b2b is not none else '') }}"
+                                     value="{{ current_data.price_b2b if current_data.price_b2b is not none else '' }}"
                                      min="0" step="0.01" placeholder="เช่น 120.50">
                                <div class="form-text">ราคาลูกค้าธุรกิจ</div>
                         </div>
