@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}ย้ายสต็อกไปหน้าร้าน{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+             <div class="card-header">
+                 <h1 class="h3 mb-0">ย้ายสต็อกไปหน้าร้าน</h1>
+            </div>
+            <div class="card-body">
+                {% if skus and back_stock %}
+                <form method="post" action="{{ url_for('move_to_display') }}">
+                    <div class="mb-3">
+                        <label for="sku" class="form-label">เลือก SKU (จากสต็อกหลังร้าน):</label>
+                        <select class="form-select" id="sku" name="sku" required>
+                            <option value="" selected disabled>-- กรุณาเลือก SKU --</option>
+                            {# วน loop เฉพาะ SKU ที่มีใน back_stock #}
+                            {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
+                              {% if sku_code in back_stock %}
+                                <option value="{{ sku_code }}">
+                                    {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ back_stock[sku_code] }}
+                                </option>
+                              {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">จำนวนที่จะย้าย:</label>
+                        {# อาจจะเพิ่ม JavaScript เพื่อ validate จำนวนไม่ให้เกินที่มีอยู่ #}
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                    </div>
+                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                         <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">ยกเลิก</a>
+                        <button type="submit" class="btn btn-info"><i class="bi bi-arrow-right-square me-1"></i>ย้ายไปหน้าร้าน</button>
+                    </div>
+                </form>
+                {% else %}
+                 <div class="alert alert-warning text-center" role="alert">
+                    ไม่มีสินค้าในสต็อกหลังร้านให้ย้าย หรือไม่พบข้อมูล SKU ที่เกี่ยวข้อง
+                 </div>
+                  <div class="text-center">
+                     <a href="{{ url_for('index') }}" class="btn btn-secondary">กลับหน้าหลัก</a>
+                 </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{# {% extends "base.html" %} ... ส่วนอื่นๆ เหมือนเดิม ... #}
+
+{% block scripts %}
+{# ใช้ back_stock_agg ที่ส่งมาจาก Flask ซึ่งเป็นยอดรวมของแต่ละ SKU ใน back_stock #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const skuSelect = document.getElementById('sku');
+    const quantityInput = document.getElementById('quantity');
+    // เปลี่ยนชื่อตัวแปร และใช้ back_stock_agg
+    const stockAggData = {{ back_stock_agg | tojson }};
+
+    if (skuSelect && quantityInput && stockAggData) {
+        skuSelect.addEventListener('change', function() {
+            const selectedSku = this.value;
+            // ใช้ stockAggData ในการกำหนด max
+            if (selectedSku && stockAggData[selectedSku] !== undefined) {
+                quantityInput.max = stockAggData[selectedSku];
+                quantityInput.placeholder = `สูงสุด ${stockAggData[selectedSku]}`;
+                if (parseInt(quantityInput.value) > stockAggData[selectedSku]) {
+                    quantityInput.value = '';
+                }
+            } else {
+                quantityInput.removeAttribute('max');
+                quantityInput.placeholder = '';
+            }
+        });
+         if(skuSelect.value) {
+             skuSelect.dispatchEvent(new Event('change'));
+        }
+    }
+});
+</script>
+{{ super() }}
+{% endblock %}

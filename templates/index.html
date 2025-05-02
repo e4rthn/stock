@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}ภาพรวมสต็อกสินค้า{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">ภาพรวมสต็อกสินค้า</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {# ... (ปุ่ม Action เหมือนเดิม) ... #}
+        <a href="{{ url_for('add_sku') }}" class="btn btn-sm btn-success me-2 shadow-sm"><i class="bi bi-plus-circle me-1"></i>เพิ่ม SKU</a>
+        <a href="{{ url_for('add_stock') }}" class="btn btn-sm btn-primary shadow-sm"><i class="bi bi-box-arrow-in-down me-1"></i>เพิ่มสต็อก</a>
+        <a href="{{ url_for('move_to_display') }}" class="btn btn-sm btn-info ms-2 shadow-sm"><i class="bi bi-arrow-right-square me-1"></i>ย้ายไปหน้าร้าน</a>
+        <a href="{{ url_for('record_sale') }}" class="btn btn-sm btn-warning ms-2 shadow-sm"><i class="bi bi-cart-dash me-1"></i>บันทึกการขาย</a>
+    </div>
+</div>
+
+{# --- เพิ่มส่วน Filter Controls --- #}
+<div class="row g-2 mb-3 align-items-end bg-light p-3 rounded border shadow-sm">
+    <div class="col-md-3">
+        <label for="filter-location" class="form-label small">กรองตามสถานะ:</label>
+        <select class="form-select form-select-sm" id="filter-location">
+            <option value="">-- ทุกสถานะ --</option>
+            {# สร้าง option จาก location_configs #}
+            {% for key, config in location_configs.items() %}
+                <option value="{{ key }}">{{ config.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label for="filter-category" class="form-label small">กรองตามประเภท:</label>
+        <select class="form-select form-select-sm" id="filter-category">
+            <option value="">-- ทุกประเภท --</option>
+             {# สร้าง option จาก allowed_categories ที่ส่งมา #}
+            {% for category_name in allowed_categories %}
+                <option value="{{ category_name }}">{{ category_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label for="filter-search" class="form-label small">ค้นหา SKU / ชื่อสินค้า:</label>
+        <input type="text" class="form-control form-control-sm" id="filter-search" placeholder="พิมพ์เพื่อค้นหา...">
+    </div>
+    <div class="col-md-2 d-grid">
+        <button class="btn btn-sm btn-outline-secondary" type="button" id="reset-filters">ล้างตัวกรอง</button>
+    </div>
+</div>
+{# --- จบส่วน Filter Controls --- #}
+
+
+{# ตารางแสดง Inventory ทั้งหมด #}
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        รายการสต็อกทั้งหมด (<span id="visible-rows-count">{{ inventory_batches | length }}</span> รายการ)
+        <span id="filter-indicator" class="text-muted small ms-2" style="display: none;">(กำลังกรอง)</span>
+    </div>
+    <div class="card-body p-0">
+        {% if inventory_batches %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" id="inventory-table"> {# เพิ่ม ID ให้ตาราง #}
+                    <thead class="sticky-top table-light">
+                        <tr>
+                            <th style="width: 10%;">สถานะ</th>
+                            <th style="width: 15%;">SKU</th>
+                            <th>ชื่อสินค้า</th>
+                            <th>ประเภท</th>
+                            <th class="text-end" style="width: 10%;">จำนวน</th>
+                            <th style="width: 15%;">วันหมดอายุ</th>
+                            <th style="width: 15%;">เวลาคงเหลือ</th>
+                            <th style="width: 10%;">วันที่รับเข้า</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# วนลูปแสดง batches ที่เรียงลำดับมาจาก app.py #}
+                        {% for batch in inventory_batches %}
+                            {% set sku_code = batch.sku %}
+                            {% set sku_info = skus_data.get(sku_code) %}
+                            {% set location_key = batch.location %}
+                            {% set config = location_configs.get(location_key, {'title': location_key, 'border_status_class': '', 'icon': 'bi-question-circle'}) %}
+                            {% set category_name = sku_info.category if sku_info else '' %}
+                            {% set search_text = (sku_code + ' ' + (sku_info.name if sku_info else '')).lower() %}
+
+                            {# เพิ่ม data attributes ให้ tr สำหรับ JavaScript Filtering #}
+                            <tr class="{{ config.border_status_class }}"
+                                data-location="{{ location_key }}"
+                                data-category="{{ category_name }}"
+                                data-search="{{ search_text }}">
+                                <td>
+                                    <span title="{{ config.title }}">
+                                       <i class="bi {{ config.icon }} me-1"></i> <span class="d-none d-md-inline">{{ config.title }}</span>
+                                    </span>
+                                </td>
+                                <td class="font-monospace">{{ sku_code }}</td>
+                                <td>{{ sku_info.name if sku_info else '???' }}</td>
+                                <td><small class="text-body-secondary">{{ category_name if category_name else '-' }}</small></td>
+                                <td class="text-end fw-bold">{{ batch.quantity }}</td>
+                                <td>
+                                    <span title="{{ format_iso_date(batch.expiry_date) }}">
+                                        {{ format_iso_date(batch.expiry_date, '%d/%m/%y') }}
+                                    </span>
+                                </td>
+                                <td>{{ format_time_remaining(batch.expiry_date) | safe }}</td>
+                                <td><small class="text-body-secondary">{{ format_iso_date(batch.arrival_date, '%d/%m/%y') }}</small></td>
+                            </tr>
+                        {% endfor %} {# end batch loop #}
+                         {# แถวสำหรับแสดงเมื่อไม่มีข้อมูลหลังจากการกรอง #}
+                         <tr id="no-results-row" style="display: none;">
+                            <td colspan="8" class="text-center text-muted fst-italic p-4">ไม่พบรายการที่ตรงกับตัวกรอง</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center text-muted p-4 fst-italic">ไม่มีข้อมูลสต็อกสินค้าในระบบ</p>
+        {% endif %} {# end if inventory_batches #}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} {# เรียก script จาก base.html ด้วย #}
+
+{# --- เพิ่ม JavaScript สำหรับ Filtering --- #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const locationFilter = document.getElementById('filter-location');
+    const categoryFilter = document.getElementById('filter-category');
+    const searchFilter = document.getElementById('filter-search');
+    const resetButton = document.getElementById('reset-filters');
+    const tableBody = document.querySelector('#inventory-table tbody');
+    const tableRows = tableBody ? Array.from(tableBody.querySelectorAll('tr:not(#no-results-row)')) : []; // เก็บ row ทั้งหมดที่ไม่ใช่ row "no results"
+    const noResultsRow = document.getElementById('no-results-row');
+    const visibleRowCountSpan = document.getElementById('visible-rows-count');
+    const filterIndicator = document.getElementById('filter-indicator');
+
+    function filterTable() {
+        const locationValue = locationFilter.value;
+        const categoryValue = categoryFilter.value;
+        const searchValue = searchFilter.value.toLowerCase().trim();
+        let visibleRows = 0;
+        let isFiltering = locationValue || categoryValue || searchValue; // เช็คว่ามีการใช้ filter หรือไม่
+
+        tableRows.forEach(row => {
+            const rowLocation = row.dataset.location;
+            const rowCategory = row.dataset.category;
+            const rowSearchData = row.dataset.search;
+
+            // Check filters
+            const locationMatch = !locationValue || rowLocation === locationValue;
+            const categoryMatch = !categoryValue || rowCategory === categoryValue;
+            const searchMatch = !searchValue || rowSearchData.includes(searchValue);
+
+            // Show or hide row
+            if (locationMatch && categoryMatch && searchMatch) {
+                row.style.display = ''; // Use default display (usually 'table-row')
+                visibleRows++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show "no results" row if needed
+        if (noResultsRow) {
+            noResultsRow.style.display = visibleRows === 0 ? '' : 'none';
+        }
+
+        // Update visible row count
+        if (visibleRowCountSpan) {
+             const totalRows = tableRows.length;
+             if (isFiltering) {
+                 visibleRowCountSpan.textContent = `${visibleRows} จาก ${totalRows}`;
+             } else {
+                 visibleRowCountSpan.textContent = totalRows;
+             }
+        }
+        // Show/hide filter indicator
+         if (filterIndicator) {
+             filterIndicator.style.display = isFiltering ? 'inline' : 'none';
+         }
+    }
+
+    // Event Listeners for filters
+    locationFilter.addEventListener('change', filterTable);
+    categoryFilter.addEventListener('change', filterTable);
+    searchFilter.addEventListener('input', filterTable); // 'input' reacts faster than 'keyup'
+
+    // Reset Button Listener
+    resetButton.addEventListener('click', function() {
+        locationFilter.value = '';
+        categoryFilter.value = '';
+        searchFilter.value = '';
+        filterTable(); // Apply reset filters
+    });
+
+    // Initial filter apply on page load (in case of back button navigation)
+    // filterTable(); // อาจจะไม่ต้องทำ ถ้าค่าเริ่มต้นคือแสดงทั้งหมด
+});
+</script>
+{# --- จบ JavaScript --- #}
+{% endblock %}
