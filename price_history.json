@@ -6,6 +6,18 @@
         "price_b2b": 125.0
     },
     {
+        "sku": "VEG003",
+        "date": "2025-05-02T17:39:32Z",
+        "price_b2c": 30.0,
+        "price_b2b": 10.0
+    },
+    {
+        "sku": "VEG003",
+        "date": "2025-05-02T17:39:14Z",
+        "price_b2c": 30.0,
+        "price_b2b": 20.0
+    },
+    {
         "sku": "CHICK02",
         "date": "2025-05-01T10:00:00Z",
         "price_b2c": 95.0,
@@ -23,16 +35,16 @@
         "price_b2c": 30.0,
         "price_b2b": null
     },
-     {
+    {
         "sku": "CHICK02",
         "date": "2025-04-15T11:00:00Z",
         "price_b2c": 90.0,
         "price_b2b": 78.0
     },
     {
-         "sku": "DRINK01",
-         "date": "2025-04-01T00:00:00Z",
-         "price_b2c": 10.0,
-         "price_b2b": 8.5
-     }
+        "sku": "DRINK01",
+        "date": "2025-04-01T00:00:00Z",
+        "price_b2c": 10.0,
+        "price_b2b": 8.5
+    }
 ]

@@ -2,21 +2,11 @@
 
 {% block title %}ตารางราคาขาย{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-tags-fill me-2"></i>ตารางราคาขาย</h1>
-    <div>
-        <span class="text-muted small me-3">เปรียบเทียบ ณ วันที่: {{ now().astimezone(BANGKOK_TZ).strftime('%d/%m/%Y %H:%M') }}</span>
-        <a href="{{ url_for('list_skus') }}" class="btn btn-sm btn-outline-secondary shadow-sm">
-            <i class="bi bi-pencil-square me-1"></i> จัดการ SKU
-        </a>
-    </div>
-</div>
-
-{# ฟังก์ชัน Macro ช่วยแสดงราคาและสัญลักษณ์ #}
+{# --- ฟังก์ชัน Macro ช่วยแสดงราคาและสัญลักษณ์ --- #}
 {% macro display_price(current_price, prev_price, change_status) %}
     {% if current_price is not none %}
-        <span class="fw-bold">{{ "{:,.2f}".format(current_price) }}</span>
+        <span class="fw-bold">{{ "{:,.2f}".format(current_price) }}</span> {# แสดงราคาปัจจุบัน #}
+        {# แสดงสัญลักษณ์การเปลี่ยนแปลงราคา #}
         {% if change_status == 'up' %}
             <i class="bi bi-arrow-up price-up ms-1" title="ขึ้นจาก {{ '{:,.2f}'.format(prev_price) if prev_price is not none else 'N/A' }}"></i>
         {% elif change_status == 'down' %}
@@ -24,67 +14,119 @@
         {% elif change_status == 'new' %}
              <i class="bi bi-star-fill price-new ms-1" title="ราคาใหม่"></i>
         {% elif change_status == 'same' %}
-             {# No indicator for same price #}
+             {# ไม่ต้องแสดงสัญลักษณ์ถ้าราคาเท่าเดิม #}
         {% endif %}
     {% elif change_status == 'removed' %}
+         {# กรณีเคยมีราคาแต่ตอนนี้ไม่มี #}
          <span class="text-muted fst-italic" title="เคยมีราคา {{ '{:,.2f}'.format(prev_price) if prev_price is not none else 'N/A' }}"> - </span>
     {% else %}
+        {# กรณีไม่มีราคาทั้งปัจจุบันและอดีต #}
         <span class="text-muted">-</span>
     {% endif %}
 {% endmacro %}
+{# --- จบ Macro --- #}
+
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-tags-fill me-2"></i>ตารางราคาขาย</h1>
+    <div>
+        <span class="text-muted small me-3 d-none d-sm-inline">เทียบ ณ {{ now().astimezone(BANGKOK_TZ).strftime('%d/%m/%y %H:%M') }}</span> {# ซ่อนวันที่บนจอ xs #}
+        <a href="{{ url_for('list_skus') }}" class="btn btn-sm btn-outline-secondary shadow-sm">
+            <i class="bi bi-pencil-square me-1"></i> จัดการ SKU
+        </a>
+    </div>
+</div>
 
 
 {% if grouped_prices %}
     {% for category_name in categories %} {# วนลูปตาม Category ที่เรียงลำดับแล้ว #}
         {% set skus_in_category = grouped_prices.get(category_name, []) %}
         {% if skus_in_category %} {# แสดงเฉพาะ Category ที่มีข้อมูล #}
+            {# ใช้ Card ครอบแต่ละ Category #}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light">
                     <h5 class="mb-0 fw-bold">{{ category_name }} <span class="badge bg-secondary rounded-pill ms-2 fw-normal">{{ skus_in_category | length }} SKU</span></h5>
                 </div>
+                {# ไม่ใส่ padding ให้ card-body เพื่อให้ list group ชิดขอบ #}
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-striped mb-0 align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 15%;">SKU</th>
-                                    <th>ชื่อสินค้า</th>
-                                    <th class="text-end" style="width: 20%;">ราคา B2C ปัจจุบัน (บาท)</th>
-                                    <th class="text-end" style="width: 20%;">ราคา B2B ปัจจุบัน (บาท)</th>
-                                    <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2C (สัปดาห์ก่อน)</th>
-                                    <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2B (สัปดาห์ก่อน)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {# skus_in_category ถูกเรียงตามชื่อแล้วจาก Python #}
-                                {% for sku_item in skus_in_category %}
-                                <tr>
-                                    <td class="font-monospace">{{ sku_item.sku }}</td>
-                                    <td>{{ sku_item.name }}</td>
-                                    {# --- แสดงราคา B2C ปัจจุบัน + สัญลักษณ์ --- #}
-                                    <td class="text-end">
-                                        {{ display_price(sku_item.current_b2c, sku_item.previous_b2c, sku_item.b2c_change) }}
-                                    </td>
-                                     {# --- แสดงราคา B2B ปัจจุบัน + สัญลักษณ์ --- #}
-                                     <td class="text-end">
-                                        {{ display_price(sku_item.current_b2b, sku_item.previous_b2b, sku_item.b2b_change) }}
-                                    </td>
-                                    {# --- แสดงราคา B2C สัปดาห์ก่อน --- #}
-                                    <td class="text-end text-muted small">
-                                        {{ "{:,.2f}".format(sku_item.previous_b2c) if sku_item.previous_b2c is not none else '-' }}
-                                    </td>
-                                    {# --- แสดงราคา B2B สัปดาห์ก่อน --- #}
-                                     <td class="text-end text-muted small">
-                                        {{ "{:,.2f}".format(sku_item.previous_b2b) if sku_item.previous_b2b is not none else '-' }}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+
+                    {# --- Mobile View (List Group: แสดงบน xs, sm) --- #}
+                    <div class="d-block d-md-none"> {# แสดงเฉพาะบนจอเล็กกว่า md #}
+                        <ul class="list-group list-group-flush">
+                            {% for sku_item in skus_in_category %}
+                            <li class="list-group-item px-3 py-2">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 text-truncate"> {# ใช้ text-truncate กันชื่อสินค้ายาวเกิน #}
+                                        <span class="font-monospace me-2">{{ sku_item.sku }}</span>{{ sku_item.name }}
+                                    </h6>
+                                    {# อาจจะใส่ปุ่มเล็กๆ หรือ link ตรงนี้ถ้าต้องการ Action เพิ่มเติม #}
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small class="text-muted">B2C ปัจจุบัน:</small>
+                                    {# เรียกใช้ Macro แสดงราคา B2C #}
+                                    <span class="fs-6">{{ display_price(sku_item.current_b2c, sku_item.previous_b2c, sku_item.b2c_change) | safe }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">B2B ปัจจุบัน:</small>
+                                     {# เรียกใช้ Macro แสดงราคา B2B #}
+                                    <span class="fs-6">{{ display_price(sku_item.current_b2b, sku_item.previous_b2b, sku_item.b2b_change) | safe }}</span>
+                                </div>
+                                {# อาจจะซ่อนราคาสัปดาห์ก่อนไว้ และแสดงเมื่อกดปุ่ม ?
+                                <div class="text-end mt-1">
+                                    <small class="text-muted">ก่อนหน้า: {{ "{:,.2f}".format(sku_item.previous_b2c) if sku_item.previous_b2c is not none else '-' }} / {{ "{:,.2f}".format(sku_item.previous_b2b) if sku_item.previous_b2b is not none else '-' }}</small>
+                                </div>
+                                #}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div> {# --- End Mobile View --- #}
+
+                    {# --- Desktop View (Table: แสดงบน md ขึ้นไป) --- #}
+                    <div class="d-none d-md-block"> {# ซ่อนบนจอเล็กกว่า md #}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-striped mb-0 align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 15%;">SKU</th>
+                                        <th>ชื่อสินค้า</th>
+                                        <th class="text-end" style="width: 20%;">ราคา B2C ปัจจุบัน (บาท)</th>
+                                        <th class="text-end" style="width: 20%;">ราคา B2B ปัจจุบัน (บาท)</th>
+                                        <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2C (สัปดาห์ก่อน)</th>
+                                        <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2B (สัปดาห์ก่อน)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sku_item in skus_in_category %}
+                                    <tr>
+                                        <td class="font-monospace">{{ sku_item.sku }}</td>
+                                        <td>{{ sku_item.name }}</td>
+                                        {# --- แสดงราคา B2C ปัจจุบัน + สัญลักษณ์ --- #}
+                                        <td class="text-end">
+                                            {{ display_price(sku_item.current_b2c, sku_item.previous_b2c, sku_item.b2c_change) | safe }}
+                                        </td>
+                                         {# --- แสดงราคา B2B ปัจจุบัน + สัญลักษณ์ --- #}
+                                         <td class="text-end">
+                                            {{ display_price(sku_item.current_b2b, sku_item.previous_b2b, sku_item.b2b_change) | safe }}
+                                        </td>
+                                        {# --- แสดงราคา B2C สัปดาห์ก่อน --- #}
+                                        <td class="text-end text-muted small">
+                                            {{ "{:,.2f}".format(sku_item.previous_b2c) if sku_item.previous_b2c is not none else '-' }}
+                                        </td>
+                                        {# --- แสดงราคา B2B สัปดาห์ก่อน --- #}
+                                         <td class="text-end text-muted small">
+                                            {{ "{:,.2f}".format(sku_item.previous_b2b) if sku_item.previous_b2b is not none else '-' }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div> {# --- End Desktop View --- #}
+
                 </div> {# end card-body #}
             </div> {# end card #}
-        {% endif %}
+        {% endif %} {# end if skus_in_category #}
     {% endfor %} {# End category loop #}
 {% else %}
     <div class="alert alert-info text-center" role="alert">
@@ -95,5 +137,6 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }} {# Includes base scripts like tooltips #}
+    {{ super() }} {# Includes base scripts like tooltips #}
+    {# Script สำหรับ Tooltip อาจจะต้อง Re-initialize ถ้ามีการเปลี่ยนแปลง DOM แต่ในกรณีนี้ไม่น่าจำเป็น #}
 {% endblock %}
