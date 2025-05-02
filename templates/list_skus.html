@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">รายการ SKU ทั้งหมด</h1>
+    <h1 class="h2"><i class="bi bi-card-list me-2"></i>รายการ SKU ทั้งหมด</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="{{ url_for('add_sku') }}" class="btn btn-success shadow-sm"><i class="bi bi-plus-circle me-1"></i>เพิ่ม SKU ใหม่</a>
     </div>
@@ -22,24 +22,26 @@
                         <th scope="col">ประเภท</th>
                         <th scope="col" class="text-center">อายุ (วัน)</th>
                         <th scope="col" class="text-center">จุดสั่งซื้อ</th>
-                        <th scope="col" class="text-end">ราคา B2C</th>
-                        <th scope="col" class="text-end">ราคา B2B</th>
+                        <th scope="col" class="text-end">ราคา B2C (ปัจจุบัน)</th> {# <-- ระบุว่าเป็นราคาปัจจุบัน #}
+                        <th scope="col" class="text-end">ราคา B2B (ปัจจุบัน)</th> {# <-- ระบุว่าเป็นราคาปัจจุบัน #}
                         <th scope="col" class="text-center" style="width: 15%;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for sku_code, sku_data in skus.items() | sort %}
+                    {# skus is now display_data from app.py including current prices #}
+                    {% for sku_code, sku_item in skus.items() %}
                     <tr>
                         <td class="font-monospace">{{ sku_code }}</td>
-                        <td>{{ sku_data.name }}</td>
-                        <td>{{ sku_data.category | default('-') }}</td>
-                        <td class="text-center">{{ sku_data.shelf_life_days | default('-') }}</td>
-                        <td class="text-center">{{ sku_data.reorder_point if sku_data.reorder_point is not none else '-' }}</td>
+                        <td>{{ sku_item.name }}</td>
+                        <td>{{ sku_item.category | default('-') }}</td>
+                        <td class="text-center">{{ sku_item.shelf_life_days | default('-') }}</td>
+                        <td class="text-center">{{ sku_item.reorder_point if sku_item.reorder_point is not none else '-' }}</td>
                         <td class="text-end">
-                            {{ "{:,.2f}".format(sku_data.price_b2c) if sku_data.price_b2c is not none else '-' }}
+                            {# Use price fields directly from the passed 'skus' dictionary #}
+                            {{ "{:,.2f}".format(sku_item.price_b2c) if sku_item.price_b2c is not none else '-' }}
                         </td>
                         <td class="text-end">
-                             {{ "{:,.2f}".format(sku_data.price_b2b) if sku_data.price_b2b is not none else '-' }}
+                             {{ "{:,.2f}".format(sku_item.price_b2b) if sku_item.price_b2b is not none else '-' }}
                         </td>
                         <td class="text-center text-nowrap">
                             <a href="{{ url_for('edit_sku', sku=sku_code) }}" class="btn btn-sm btn-outline-primary me-1" title="แก้ไข">

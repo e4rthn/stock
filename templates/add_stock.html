@@ -23,29 +23,36 @@
                     </div>
                  {% endif %}
 
+                 {# Use form_data for repopulation #}
+                {% set current_data = form_data if form_data else {'arrival_date': current_date} %}
+
+
                 {% if skus %}
                 <form method="post" action="{{ url_for('add_stock') }}" novalidate>
                     <div class="mb-3">
                         <label for="sku" class="form-label fw-bold">เลือก SKU:<span class="text-danger ms-1">*</span></label>
                         <select class="form-select {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" required>
-                            <option value="" {% if not (request.form.sku or selected_sku) %}selected{% endif %} disabled>-- กรุณาเลือก --</option>
+                            <option value="" {% if not current_data.sku %}selected{% endif %} disabled>-- กรุณาเลือก --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                            <option value="{{ sku_code }}" {% if (request.form.sku or selected_sku) == sku_code %}selected{% endif %}>
-                                {{ sku_data.name }} ({{ sku_code }}) - {{ sku_data.shelf_life_days }} วัน
+                            <option value="{{ sku_code }}" {% if current_data.sku == sku_code %}selected{% endif %}>
+                                {{ sku_data.name }} ({{ sku_code }}) {% if sku_data.shelf_life_days %}- {{ sku_data.shelf_life_days }} วัน{% endif %}
                             </option>
                             {% endfor %}
                         </select>
+                         {% if errors and 'sku' in errors and 'กำหนดอายุสินค้า' in errors.sku %}
+                            <div class="invalid-feedback d-block">{{ errors.sku }} <a href="{{ url_for('edit_sku', sku=current_data.sku) }}">แก้ไข SKU นี้</a></div>
+                         {% endif %}
                     </div>
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
                              <label for="arrival_date" class="form-label fw-bold">วันที่รับสินค้า:<span class="text-danger ms-1">*</span></label>
                              <input type="date" class="form-control {% if errors and 'arrival_date' in errors %}is-invalid{% endif %}" id="arrival_date" name="arrival_date"
-                                    value="{{ request.form.arrival_date or current_date }}" required>
+                                    value="{{ current_data.arrival_date }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="quantity" class="form-label fw-bold">จำนวน:<span class="text-danger ms-1">*</span></label>
                             <input type="number" class="form-control {% if errors and 'quantity' in errors %}is-invalid{% endif %}" id="quantity" name="quantity" min="1"
-                                   value="{{ request.form.quantity or '' }}" required placeholder="จำนวนชิ้น">
+                                   value="{{ current_data.quantity or '' }}" required placeholder="จำนวนชิ้น">
                         </div>
                     </div>
                      <div class="form-text mb-3">สินค้าที่เพิ่มจะเข้าสต็อกหลังร้าน และเริ่มนับวันหมดอายุจากวันที่รับสินค้า</div>

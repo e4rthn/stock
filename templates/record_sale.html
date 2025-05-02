@@ -23,15 +23,20 @@
                     </div>
                  {% endif %}
 
+                 {# Use form_data for repopulation #}
+                 {% set current_data = form_data if form_data else {} %}
+
+
                  {% if skus %} {# skus here means available_skus_to_sell #}
                  <form method="post" action="{{ url_for('record_sale') }}" novalidate>
                     <div class="mb-3">
                         <label for="sku" class="form-label fw-bold">เลือก SKU (จากสินค้าพร้อมขาย):<span class="text-danger ms-1">*</span></label>
                         <select class="form-select {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" required>
-                            <option value="" {% if not request.form.sku %}selected{% endif %} disabled>-- กรุณาเลือก SKU --</option>
+                            <option value="" {% if not current_data.sku %}selected{% endif %} disabled>-- กรุณาเลือก SKU --</option>
                             {% for sku_code, sku_data in skus.items() | sort(attribute='name') %}
-                                {% set available_qty = display_stock_agg.get(sku_code, 0) %}
-                               <option value="{{ sku_code }}" {% if request.form.sku == sku_code %}selected{% endif %}>
+                                {# --- ใช้ sellable_stock_agg --- #}
+                                {% set available_qty = sellable_stock_agg.get(sku_code, 0) %}
+                               <option value="{{ sku_code }}" {% if current_data.sku == sku_code %}selected{% endif %}>
                                    {{ sku_data.name }} ({{ sku_code }}) - คงเหลือ: {{ available_qty }}
                                </option>
                             {% endfor %}
@@ -40,7 +45,7 @@
                     <div class="mb-3">
                         <label for="quantity" class="form-label fw-bold">จำนวนที่ขาย:<span class="text-danger ms-1">*</span></label>
                         <input type="number" class="form-control {% if errors and 'quantity' in errors %}is-invalid{% endif %}" id="quantity" name="quantity" min="1"
-                               value="{{ request.form.quantity or '' }}" required placeholder="ระบุจำนวน">
+                               value="{{ current_data.quantity or '' }}" required placeholder="ระบุจำนวน">
                         <div class="form-text">ระบบจะหักจาก Batch ที่ใกล้หมดอายุที่สุดก่อน (RTC2 > RTC1 > หน้าร้าน)</div>
                     </div>
                      <hr class="my-4">
@@ -69,7 +74,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const skuSelect = document.getElementById('sku');
     const quantityInput = document.getElementById('quantity');
-    const stockAggData = {{ display_stock_agg | tojson }};
+     {# --- ใช้ sellable_stock_agg --- #}
+    const stockAggData = {{ sellable_stock_agg | tojson }};
 
     if (skuSelect && quantityInput && stockAggData) {
         skuSelect.addEventListener('change', function() {
@@ -87,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  quantityInput.value = '';
             }
         });
+        // Trigger change on load if an SKU is pre-selected
          if(skuSelect.value) { skuSelect.dispatchEvent(new Event('change')); }
          else { quantityInput.placeholder = 'ระบุจำนวน'; }
     }

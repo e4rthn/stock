@@ -23,7 +23,8 @@
         {% set loc_config = location_configs.get(loc_key) %}
         {% set loc_data = summary.get(loc_key, {'total_qty': 0, 'sku_count': 0}) %}
         {% if loc_config %} {# Check if config exists #}
-            {% set card_border_class = loc_config.border_status_class | replace('status-', 'border-') if loc_config.border_status_class else 'border-light' %}
+            {% set card_border_class = 'border-' + loc_key if loc_key in ['display', 'back_stock', 'rtc1', 'rtc2', 'bad'] else 'border-light' %}
+            {# Simple border based on key for visualization #}
             {% set text_color_class = 'text-white' if loc_key in ['bad', 'display', 'rtc2'] else 'text-dark' %} {# Adjust text color for contrast #}
             {% set header_bg_class = loc_config.badge_class | replace('text-', '') if loc_config.badge_class else 'bg-light' %}
             <div class="col-6 col-md-4 col-lg">
@@ -70,7 +71,7 @@
                                             <span class="badge {{ loc_config.badge_class }}">{{ loc_config.title }}</span>
                                         </td>
                                         <td class="text-end">{{ batch.quantity }}</td>
-                                        <td class="text-nowrap" title="หมดอายุ: {{ format_iso_date(batch.expiry_date, '%d/%m/%y %H:%M') }} BKK">
+                                        <td class="text-nowrap text-center" title="หมดอายุ: {{ format_iso_date(batch.expiry_date, '%d/%m/%y %H:%M') }}">
                                             {{ format_time_remaining(batch.expiry_date) | safe }}
                                         </td>
                                     </tr>

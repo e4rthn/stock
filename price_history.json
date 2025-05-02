@@ -1,0 +1,38 @@
+[
+    {
+        "sku": "PORK01",
+        "date": "2025-05-03T17:10:00Z",
+        "price_b2c": 155.0,
+        "price_b2b": 125.0
+    },
+    {
+        "sku": "CHICK02",
+        "date": "2025-05-01T10:00:00Z",
+        "price_b2c": 95.0,
+        "price_b2b": 80.0
+    },
+    {
+        "sku": "PORK01",
+        "date": "2025-04-25T09:30:00Z",
+        "price_b2c": 150.0,
+        "price_b2b": 120.0
+    },
+    {
+        "sku": "VEG003",
+        "date": "2025-04-20T08:00:00Z",
+        "price_b2c": 30.0,
+        "price_b2b": null
+    },
+     {
+        "sku": "CHICK02",
+        "date": "2025-04-15T11:00:00Z",
+        "price_b2c": 90.0,
+        "price_b2b": 78.0
+    },
+    {
+         "sku": "DRINK01",
+         "date": "2025-04-01T00:00:00Z",
+         "price_b2c": 10.0,
+         "price_b2b": 8.5
+     }
+]

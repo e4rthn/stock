@@ -10,23 +10,38 @@
                 <h1 class="h3 mb-0 fw-normal"><i class="bi bi-plus-circle me-2"></i>เพิ่ม SKU ใหม่</h1>
             </div>
             <div class="card-body p-4">
-                <form method="post" action="{{ url_for('add_sku') }}">
+                 {# Display validation errors if any #}
+                 {% if errors %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <strong>กรุณาแก้ไขข้อผิดพลาด:</strong>
+                        <ul>
+                        {% for field, msg in errors.items() %}
+                            <li>{{ msg }}</li>
+                        {% endfor %}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                 {% endif %}
+
+                {# Use form_data for repopulation #}
+                {% set current_data = form_data if form_data else {} %}
+
+                <form method="post" action="{{ url_for('add_sku') }}" novalidate>
                     <div class="mb-3">
                         <label for="sku" class="form-label fw-bold">SKU Code:<span class="text-danger ms-1">*</span></label>
-                        <input type="text" class="form-control" id="sku" name="sku" value="{{ request.form.sku or sku or '' }}" required style="text-transform:uppercase" placeholder="เช่น PORK01, VG005">
+                        <input type="text" class="form-control {% if errors and 'sku' in errors %}is-invalid{% endif %}" id="sku" name="sku" value="{{ current_data.sku or '' }}" required style="text-transform:uppercase" placeholder="เช่น PORK01, VG005">
                         <div class="form-text">รหัสสินค้าที่ไม่ซ้ำกัน (แนะนำตัวพิมพ์ใหญ่)</div>
                     </div>
                     <div class="mb-3">
                         <label for="name" class="form-label fw-bold">ชื่อสินค้า:<span class="text-danger ms-1">*</span></label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ request.form.name or name or '' }}" required placeholder="เช่น หมูสามชั้นสไลด์">
+                        <input type="text" class="form-control {% if errors and 'name' in errors %}is-invalid{% endif %}" id="name" name="name" value="{{ current_data.name or '' }}" required placeholder="เช่น หมูสามชั้นสไลด์">
                     </div>
                     <div class="mb-3">
                         <label for="category" class="form-label fw-bold">ประเภท:<span class="text-danger ms-1">*</span></label>
-                        <select class="form-select" id="category" name="category" required>
-                            {# Use request.form.category for repopulation on error, fallback to selected_category if passed #}
-                            <option value="" {% if not (request.form.category or selected_category) %}selected{% endif %} disabled>-- กรุณาเลือก --</option>
+                        <select class="form-select {% if errors and 'category' in errors %}is-invalid{% endif %}" id="category" name="category" required>
+                            <option value="" {% if not current_data.category %}selected{% endif %} disabled>-- กรุณาเลือก --</option>
                             {% for category_name in categories %}
-                            <option value="{{ category_name }}" {% if (request.form.category or selected_category) == category_name %}selected{% endif %}>
+                            <option value="{{ category_name }}" {% if current_data.category == category_name %}selected{% endif %}>
                                 {{ category_name }}
                             </option>
                             {% endfor %}
@@ -35,19 +50,35 @@
                     <div class="row g-2"> {# Group Shelf Life and Reorder Point #}
                         <div class="col-md-6 mb-3">
                              <label for="shelf_life_days" class="form-label fw-bold">อายุสินค้า (วัน):<span class="text-danger ms-1">*</span></label>
-                             <input type="number" class="form-control" id="shelf_life_days" name="shelf_life_days"
-                                    value="{{ request.form.shelf_life_days or shelf_life or '' }}" min="1" required placeholder="เช่น 5">
+                             <input type="number" class="form-control {% if errors and 'shelf_life_days' in errors %}is-invalid{% endif %}" id="shelf_life_days" name="shelf_life_days"
+                                    value="{{ current_data.shelf_life_days or '' }}" min="1" required placeholder="เช่น 5">
                              <div class="form-text">วันนับจากวันที่รับเข้า (>= 1)</div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            {# --- เพิ่มช่อง Reorder Point --- #}
                              <label for="reorder_point" class="form-label fw-bold">จุดสั่งซื้อขั้นต่ำ:</label>
-                             <input type="number" class="form-control" id="reorder_point" name="reorder_point"
-                                    value="{{ request.form.reorder_point or '' }}" min="0" placeholder="เว้นว่าง=ไม่ตั้งค่า">
+                             <input type="number" class="form-control {% if errors and 'reorder_point' in errors %}is-invalid{% endif %}" id="reorder_point" name="reorder_point"
+                                    value="{{ current_data.reorder_point if current_data.reorder_point is not none else '' }}" min="0" placeholder="เว้นว่าง=ไม่ตั้งค่า">
                              <div class="form-text">จำนวนขั้นต่ำที่ควรมี (>= 0)</div>
-                            {# --- จบช่อง Reorder Point --- #}
                         </div>
                     </div>
+                     {# --- ราคา (Initial Price) --- #}
+                     <h5 class="mt-4 mb-3 border-bottom pb-2">ราคาเริ่มต้น</h5>
+                     <div class="row g-2">
+                         <div class="col-md-6 mb-3">
+                              <label for="price_b2c" class="form-label fw-bold">ราคา B2C (บาท):</label>
+                              <input type="number" class="form-control {% if errors and 'price_b2c' in errors %}is-invalid{% endif %}" id="price_b2c" name="price_b2c"
+                                     value="{{ current_data.price_b2c if current_data.price_b2c is not none else '' }}"
+                                     min="0" step="0.01" placeholder="เช่น 150.00">
+                           <div class="form-text">ราคาลูกค้าทั่วไป (เว้นว่างได้)</div>
+                         </div>
+                          <div class="col-md-6 mb-3">
+                              <label for="price_b2b" class="form-label fw-bold">ราคา B2B (บาท):</label>
+                              <input type="number" class="form-control {% if errors and 'price_b2b' in errors %}is-invalid{% endif %}" id="price_b2b" name="price_b2b"
+                                      value="{{ current_data.price_b2b if current_data.price_b2b is not none else '' }}"
+                                      min="0" step="0.01" placeholder="เช่น 120.50">
+                                <div class="form-text">ราคาลูกค้าธุรกิจ (เว้นว่างได้)</div>
+                         </div>
+                     </div>
                     <hr class="my-4">
                     <div class="d-flex justify-content-end">
                         <a href="{{ url_for('list_skus') }}" class="btn btn-secondary me-2">ยกเลิก</a>

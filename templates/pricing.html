@@ -4,62 +4,88 @@
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2"><i class="bi bi-tags-fill me-2"></i>ตารางราคาขาย (B2C / B2B)</h1>
-    <a href="{{ url_for('list_skus') }}" class="btn btn-sm btn-outline-secondary shadow-sm">
-        <i class="bi bi-pencil-square me-1"></i> ไปหน้าจัดการ SKU (เพื่อแก้ไขราคา)
-    </a>
+    <h1 class="h2"><i class="bi bi-tags-fill me-2"></i>ตารางราคาขาย</h1>
+    <div>
+        <span class="text-muted small me-3">เปรียบเทียบ ณ วันที่: {{ now().astimezone(BANGKOK_TZ).strftime('%d/%m/%Y %H:%M') }}</span>
+        <a href="{{ url_for('list_skus') }}" class="btn btn-sm btn-outline-secondary shadow-sm">
+            <i class="bi bi-pencil-square me-1"></i> จัดการ SKU
+        </a>
+    </div>
 </div>
 
-{# ใช้ Accordion เพื่อจัดกลุ่ม Category #}
+{# ฟังก์ชัน Macro ช่วยแสดงราคาและสัญลักษณ์ #}
+{% macro display_price(current_price, prev_price, change_status) %}
+    {% if current_price is not none %}
+        <span class="fw-bold">{{ "{:,.2f}".format(current_price) }}</span>
+        {% if change_status == 'up' %}
+            <i class="bi bi-arrow-up price-up ms-1" title="ขึ้นจาก {{ '{:,.2f}'.format(prev_price) if prev_price is not none else 'N/A' }}"></i>
+        {% elif change_status == 'down' %}
+            <i class="bi bi-arrow-down price-down ms-1" title="ลงจาก {{ '{:,.2f}'.format(prev_price) if prev_price is not none else 'N/A' }}"></i>
+        {% elif change_status == 'new' %}
+             <i class="bi bi-star-fill price-new ms-1" title="ราคาใหม่"></i>
+        {% elif change_status == 'same' %}
+             {# No indicator for same price #}
+        {% endif %}
+    {% elif change_status == 'removed' %}
+         <span class="text-muted fst-italic" title="เคยมีราคา {{ '{:,.2f}'.format(prev_price) if prev_price is not none else 'N/A' }}"> - </span>
+    {% else %}
+        <span class="text-muted">-</span>
+    {% endif %}
+{% endmacro %}
+
+
 {% if grouped_prices %}
-    <div class="accordion" id="pricingAccordion">
-        {% for category_name in categories %} {# Loop through ordered categories from app.py #}
-            {% set skus_in_category = grouped_prices.get(category_name, []) %}
-            {% if skus_in_category %} {# Only show category if it has SKUs #}
-                {% set collapse_id = "collapse-" + category_name|replace(' ', '-')|replace('/', '-')|replace('(', '')|replace(')', '')|replace('.', '') %}
-                {% set heading_id = "heading-" + category_name|replace(' ', '-')|replace('/', '-')|replace('(', '')|replace(')', '')|replace('.', '') %}
-                <div class="accordion-item shadow-sm mb-2">
-                    <h2 class="accordion-header" id="{{ heading_id }}">
-                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#{{ collapse_id }}" aria-expanded="false" aria-controls="{{ collapse_id }}">
-                            {{ category_name }}
-                            <span class="badge bg-secondary rounded-pill ms-2">{{ skus_in_category | length }} SKU</span>
-                        </button>
-                    </h2>
-                    <div id="{{ collapse_id }}" class="accordion-collapse collapse" aria-labelledby="{{ heading_id }}">
-                        <div class="accordion-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover table-striped mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th style="width: 20%;">SKU</th>
-                                            <th>ชื่อสินค้า</th>
-                                            <th class="text-end" style="width: 20%;">ราคา B2C (บาท)</th>
-                                            <th class="text-end" style="width: 20%;">ราคา B2B (บาท)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {# SKUs are already sorted by name within category from app.py #}
-                                        {% for sku_item in skus_in_category %}
-                                        <tr>
-                                            <td class="font-monospace">{{ sku_item.sku }}</td>
-                                            <td>{{ sku_item.name }}</td>
-                                            <td class="text-end">
-                                                {{ "{:,.2f}".format(sku_item.price_b2c) if sku_item.price_b2c is not none else '-' }}
-                                            </td>
-                                             <td class="text-end">
-                                                {{ "{:,.2f}".format(sku_item.price_b2b) if sku_item.price_b2b is not none else '-' }}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+    {% for category_name in categories %} {# วนลูปตาม Category ที่เรียงลำดับแล้ว #}
+        {% set skus_in_category = grouped_prices.get(category_name, []) %}
+        {% if skus_in_category %} {# แสดงเฉพาะ Category ที่มีข้อมูล #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fw-bold">{{ category_name }} <span class="badge bg-secondary rounded-pill ms-2 fw-normal">{{ skus_in_category | length }} SKU</span></h5>
                 </div>
-            {% endif %}
-        {% endfor %} {# End category loop #}
-    </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover table-striped mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 15%;">SKU</th>
+                                    <th>ชื่อสินค้า</th>
+                                    <th class="text-end" style="width: 20%;">ราคา B2C ปัจจุบัน (บาท)</th>
+                                    <th class="text-end" style="width: 20%;">ราคา B2B ปัจจุบัน (บาท)</th>
+                                    <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2C (สัปดาห์ก่อน)</th>
+                                    <th class="text-end text-muted small" style="width: 15%; font-weight:normal;">B2B (สัปดาห์ก่อน)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {# skus_in_category ถูกเรียงตามชื่อแล้วจาก Python #}
+                                {% for sku_item in skus_in_category %}
+                                <tr>
+                                    <td class="font-monospace">{{ sku_item.sku }}</td>
+                                    <td>{{ sku_item.name }}</td>
+                                    {# --- แสดงราคา B2C ปัจจุบัน + สัญลักษณ์ --- #}
+                                    <td class="text-end">
+                                        {{ display_price(sku_item.current_b2c, sku_item.previous_b2c, sku_item.b2c_change) }}
+                                    </td>
+                                     {# --- แสดงราคา B2B ปัจจุบัน + สัญลักษณ์ --- #}
+                                     <td class="text-end">
+                                        {{ display_price(sku_item.current_b2b, sku_item.previous_b2b, sku_item.b2b_change) }}
+                                    </td>
+                                    {# --- แสดงราคา B2C สัปดาห์ก่อน --- #}
+                                    <td class="text-end text-muted small">
+                                        {{ "{:,.2f}".format(sku_item.previous_b2c) if sku_item.previous_b2c is not none else '-' }}
+                                    </td>
+                                    {# --- แสดงราคา B2B สัปดาห์ก่อน --- #}
+                                     <td class="text-end text-muted small">
+                                        {{ "{:,.2f}".format(sku_item.previous_b2b) if sku_item.previous_b2b is not none else '-' }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div> {# end card-body #}
+            </div> {# end card #}
+        {% endif %}
+    {% endfor %} {# End category loop #}
 {% else %}
     <div class="alert alert-info text-center" role="alert">
         ยังไม่มีข้อมูล SKU หรือราคาในระบบ
@@ -69,5 +95,5 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
+{{ super() }} {# Includes base scripts like tooltips #}
 {% endblock %}

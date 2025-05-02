@@ -1,34 +1,20 @@
 {
-    "057890111": {
-        "name": "ไก่ย่างนมสด",
-        "category": "ไก่",
-        "shelf_life_days": 5,
-        "reorder_point": null,
-        "price_b2c": null,
-        "price_b2b": null
-    },
-    "001": {
-        "name": "ไก่",
-        "category": "ไก่",
-        "shelf_life_days": 6,
-        "reorder_point": null,
-        "price_b2c": 150.0,
-        "price_b2b": 120.0
-    },
-    "002": {
-        "name": "หมู",
+    "PORK01": {
+        "name": "หมูสามชั้นสไลด์",
         "category": "หมู",
-        "shelf_life_days": 6,
-        "reorder_point": null,
-        "price_b2c": null,
-        "price_b2b": null
-    },
-    "กกหกห": {
-        "name": "หกหกกห",
-        "category": "ผลไม้",
         "shelf_life_days": 5,
-        "reorder_point": null,
-        "price_b2c": null,
-        "price_b2b": null
+        "reorder_point": 10
+    },
+    "CHICK02": {
+        "name": "ปีกไก่บน",
+        "category": "ไก่",
+        "shelf_life_days": 7,
+        "reorder_point": 20
+    },
+    "VEG003": {
+        "name": "กะหล่ำปลี",
+        "category": "ผัก",
+        "shelf_life_days": 10,
+        "reorder_point": 5
     }
 }

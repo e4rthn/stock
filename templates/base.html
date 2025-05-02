@@ -46,12 +46,16 @@
     *:focus-visible { outline: 2px solid var(--lotus-green) !important; outline-offset: 2px; }
     .accordion-button:not(.collapsed) { background-color: var(--bs-primary-bg-subtle); color: var(--bs-body-color);}
     .accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.125); }
+    /* Price change indicator styles */
+    .price-up { color: var(--bs-danger); }
+    .price-down { color: var(--bs-success); }
+    .price-new { color: var(--bs-info); }
   </style>
 </head>
 <body>
   <nav class="navbar navbar-expand-md navbar-dark fixed-top ">
     <div class="container-fluid container">
-      <a class="navbar-brand" href="{{ url_for('index') }}"><i class="bi bi-box-seam-fill me-2"></i>Fresh Inventory</a>
+      <a class="navbar-brand" href="{{ url_for('index') }}"><i class="bi bi-box-seam-fill me-2"></i>Fresh App Bo Thong</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -80,6 +84,9 @@
              </ul>
            </li>
         </ul>
+         <span class="navbar-text text-white-50 small">
+            {{ now().astimezone(BANGKOK_TZ).strftime('%d/%m/%Y %H:%M') }} BKK
+        </span>
       </div>
     </div>
   </nav>
@@ -113,18 +120,33 @@
   <script>
     // Activate Bootstrap Tooltips and Delete Confirmation
     document.addEventListener('DOMContentLoaded', function() {
+        // Delete Confirmation
         const deleteForms = document.querySelectorAll('form.delete-form');
         deleteForms.forEach(form => {
             form.addEventListener('submit', function(event) {
-                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ SKU นี้? สต็อกที่เกี่ยวข้องต้องไม่มีอยู่แล้ว')) {
+                if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ SKU นี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
                     event.preventDefault();
                 }
             });
         });
-         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]:not([title=""])'))
-         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-           return new bootstrap.Tooltip(tooltipTriggerEl, { trigger : 'hover' })
-         })
+
+        // Tooltips Initialization (ensure it runs after dynamic content might be loaded)
+         var initializeTooltips = function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]:not([title=""])'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                // Dispose existing tooltip before creating a new one
+                var existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+                if (existingTooltip) {
+                    existingTooltip.dispose();
+                }
+                return new bootstrap.Tooltip(tooltipTriggerEl, { trigger : 'hover' }); // Use hover trigger
+            });
+         };
+
+         initializeTooltips(); // Initialize on initial load
+
+         // If you have content loaded via AJAX or dynamically, you might need to recall initializeTooltips() after load.
+
     });
   </script>
   {% endblock %}
